@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Part 5 - Prompt 設計與內容生成</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 20px; font-weight: 700; color: #fff; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.4); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; display: flex; align-items: center; justify-content: center; }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255, 255, 255, 0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); padding: 35px 45px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #667eea; font-size: 40px; margin-bottom: 18px; text-align: center; }
+        h2 { color: #764ba2; font-size: 28px; margin-bottom: 18px; border-bottom: 3px solid #667eea; padding-bottom: 10px; }
+        h3 { color: #667eea; font-size: 20px; margin: 18px 0 10px 0; }
+        p, li { font-size: 16px; line-height: 1.7; color: #444; margin-bottom: 8px; }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-family: 'Consolas', monospace; color: #d63384; }
+        pre { background: #282c34; color: #abb2bf; padding: 15px; border-radius: 10px; margin: 12px 0; font-size: 13px; font-family: 'Consolas', monospace; }
+        .box { padding: 12px 18px; border-radius: 10px; margin: 12px 0; border-left: 4px solid; }
+        .info { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 15px; }
+        .concept-card { background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%); padding: 15px; border-radius: 12px; border: 2px solid #e8ecff; }
+        .tag-badge { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 15px; font-size: 13px; margin: 2px; }
+        .time-badge { display: inline-block; background: #667eea; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; margin-bottom: 10px; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; font-weight: 700; font-size: 13px; margin-right: 8px; }
+        .screenshot { max-width: 100%; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); margin: 12px 0; border: 2px solid #e0e0e0; }
+        .screenshot-container { text-align: center; margin: 12px 0; }
+        .screenshot-caption { font-size: 13px; color: #666; margin-top: 8px; font-style: italic; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .two-column { grid-template-columns: 1fr; } }
+        .indicators { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 4000; padding: 8px 15px; background: rgba(0,0,0,0.3); border-radius: 25px; }
+        .dot { width: 8px; height: 8px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; }
+        .dot.active { background: #fff; transform: scale(1.4); }
+        .cover-content { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 50vh; }
+        .cover-content h1 { font-size: 44px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .cover-subtitle { font-size: 22px; color: #764ba2; margin-bottom: 20px; }
+        .cover-info { font-size: 15px; color: #888; margin-top: 25px; }
+        .part-badge { display: inline-block; background: #28a745; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; margin-left: 10px; }
+        .prompt-box { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 10px; margin: 10px 0; font-family: 'Consolas', monospace; font-size: 13px; white-space: pre-wrap; border-left: 4px solid #667eea; }
+        .flow-chart { background: #f8f9ff; padding: 15px; border-radius: 10px; text-align: center; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-title">Part 5 - Prompt 設計與內容生成</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">首頁</a>
+            <a href="Part4_資料收集與NotebookLM.html" class="nav-btn">← 上一章</a>
+            <a href="Part6_進階技巧與Skill建立.html" class="nav-btn">下一章 →</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">全螢幕</button>
+            <span class="nav-btn" id="pageIndicator">1 / 15</span>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+        <!-- 封面 -->
+        <div class="slide active">
+            <div class="content-card cover-content">
+                <h1>Part 5：Prompt 設計與內容生成</h1>
+                <p class="cover-subtitle">打造可重複使用的 AI 協作工具組</p>
+                <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <span class="tag-badge">Prompt 組</span>
+                    <span class="tag-badge">標題生成</span>
+                    <span class="tag-badge">重點條列</span>
+                    <span class="tag-badge">AI 內容生成</span>
+                </div>
+                <p class="cover-info">曾慶良(阿亮老師) | AI 協作簡報實戰工作坊<br>實作 10-12 | Time 10-12</p>
+            </div>
+        </div>
+
+        <!-- 實作 10：Prompt 組 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 10</p>
+                <h2>實作 10：設計可重複使用的 Prompt 組 <span class="part-badge">Part 1/7</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>學習目標</h3>
+                        <ul>
+                            <li>設計「萬用」的 Prompt 模板</li>
+                            <li>建立自己的 Prompt 工具箱</li>
+                            <li>未來做簡報時可以重複使用</li>
+                        </ul>
+                        <h3>Prompt 組的概念</h3>
+                        <p>像是料理食譜，一次設計好，以後照著做就好！</p>
+                        <div class="box info">
+                            <strong>我們要建立 5 個 Prompt：</strong>標題、條列、開場白、結語、單頁內容
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img45.png" alt="Prompt 組" class="screenshot">
+                        <p class="screenshot-caption">亮師 45：Prompt 組範例</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt 1：標題生成器 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 10</p>
+                <h2>Prompt 1：標題生成器 <span class="part-badge">Part 2/7</span></h2>
+                <div class="prompt-box">請幫我想 5 個簡報頁面的標題。
+
+這一頁要講的內容是：【在這裡描述這一頁要講什麼】
+
+標題要求：
+- 簡短有力，不超過 10 個字
+- 要能引起觀眾興趣
+- 避免太普通的標題（像是「介紹」「說明」這種）
+
+請給我 5 個不同風格的選項：
+1. 正式專業風格
+2. 輕鬆親切風格
+3. 疑問句風格（引發思考）
+4. 數字型風格（例如「3 個關鍵」）
+5. 行動導向風格（例如「開始你的...」）</div>
+                <div class="box info">
+                    <strong>使用方式：</strong>把【】裡的內容換成你的實際內容即可！
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt 2：重點條列轉換器 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 10</p>
+                <h2>Prompt 2：重點條列轉換器 <span class="part-badge">Part 3/7</span></h2>
+                <div class="prompt-box">請把以下內容整理成簡報用的條列重點：
+
+原始內容：
+【在這裡貼上你想要整理的文字】
+
+要求：
+- 每個重點控制在 15 個字以內
+- 最多 5 個重點
+- 每點用動詞開頭（例如「提升...」「建立...」「避免...」）
+- 抓出最重要的資訊，不重要的可以省略
+- 用簡報觀眾容易理解的語言</div>
+                <div class="box info">
+                    <strong>適用時機：</strong>把長文整理成簡報用的條列重點
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt 3：開場白生成器 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 10</p>
+                <h2>Prompt 3：開場白生成器 <span class="part-badge">Part 4/7</span></h2>
+                <div class="prompt-box">請幫我寫一段簡報的開場白。
+
+簡報主題：【填入你的主題】
+目標觀眾：【例如「公司新人」「對 AI 有興趣的上班族」】
+開場白長度：約 30-60 秒（100-150 字）
+
+開場白類型（請各給一個）：
+- 提問型：用一個問題開頭，引發觀眾思考
+- 數據型：用一個驚人的數據開頭
+- 故事型：用一個簡短的故事或案例開頭
+- 共鳴型：描述觀眾可能遇到的問題或情境
+
+請給我開場白的完整文字，以及講這段話時的建議語氣。</div>
+            </div>
+        </div>
+
+        <!-- Prompt 4：總結與行動呼籲 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 10</p>
+                <h2>Prompt 4：總結與行動呼籲生成器 <span class="part-badge">Part 5/7</span></h2>
+                <div class="prompt-box">請幫我寫簡報的結尾總結與行動呼籲。
+
+簡報主題：【填入你的主題】
+這份簡報最重要的 3 個重點：
+1. 【重點一】
+2. 【重點二】
+3. 【重點三】
+
+我希望觀眾看完後會做的事：
+【例如「開始使用 ChatGPT」「報名進階課程」】
+
+請提供：
+1. 重點回顧（用 1-2 句話總結整份簡報）
+2. 行動呼籲（告訴觀眾下一步可以做什麼，要具體、可執行）
+3. 結尾金句（一句讓人印象深刻的話）</div>
+            </div>
+        </div>
+
+        <!-- Prompt 5：單頁內容生成器 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 10</p>
+                <h2>Prompt 5：單頁內容生成器 <span class="part-badge">Part 6/7</span></h2>
+                <div class="prompt-box">請幫我寫簡報第【X】頁的內容。
+
+這一頁的主題：【填入這一頁的主題】
+這一頁要傳達的核心訊息：【用一句話說明最重要的事】
+
+我有的素材（可選）：
+【如果有從 NotebookLM 整理出來的素材，可以貼在這裡】
+
+輸出格式：
+- 標題：10 字以內，要能引起興趣
+- 副標題（選擇性）：補充說明，20 字以內
+- 內容：3-4 個條列重點，每點 15-20 字
+- 講者備註：我講這一頁時可以補充說明的內容，50-100 字</div>
+            </div>
+        </div>
+
+        <!-- Prompt 組存檔 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 10</p>
+                <h2>把 Prompt 組存成檔案 <span class="part-badge">Part 7/7</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>存檔建議</h3>
+                        <ul>
+                            <li>存成 <code>.md</code> 或 <code>.txt</code> 檔案</li>
+                            <li>可以全部放在同一個檔案</li>
+                            <li>或一個 Prompt 一個檔案</li>
+                        </ul>
+                        <h3>檔案命名範例</h3>
+                        <ul>
+                            <li><code>我的Prompt組.md</code></li>
+                            <li><code>prompt-標題生成器.md</code></li>
+                            <li><code>prompt-重點條列器.md</code></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>建立資料夾結構</h3>
+                        <pre>我的簡報專案/
+├── 簡報.html
+├── template.html
+├── 簡報內容大綱.txt
+└── prompts/
+    ├── 標題生成器.md
+    ├── 重點條列器.md
+    ├── 開場白生成器.md
+    ├── 結語生成器.md
+    └── 單頁內容生成器.md</pre>
+                        <div class="box success">
+                            <strong>以後：</strong>做新簡報時，直接複製使用！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 11：AI 生成內容 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 11</p>
+                <h2>實作 11：用 AI 生成完整簡報內容草稿 <span class="part-badge">Part 1/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>學習目標</h3>
+                        <ul>
+                            <li>用 NotebookLM 整理的重點</li>
+                            <li>搭配 Prompt 組生成內容</li>
+                            <li>產出完整的簡報文字草稿</li>
+                        </ul>
+                        <h3>生成流程</h3>
+                        <p><span class="step-number">1</span>拿出 NotebookLM 整理的重點</p>
+                        <p><span class="step-number">2</span>對每頁使用合適的 Prompt</p>
+                        <p><span class="step-number">3</span>生成標題、重點、備註</p>
+                        <p><span class="step-number">4</span>整理成文字檔保存</p>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img48.png" alt="生成內容" class="screenshot">
+                        <p class="screenshot-caption">亮師 48：AI 生成的內容</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 逐頁生成 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 11</p>
+                <h2>逐頁生成內容 <span class="part-badge">Part 2/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>封面頁</h3>
+                        <p>用「標題生成器」產生標題</p>
+                        <p>選一個最吸引人的</p>
+                        <h3>內容頁</h3>
+                        <p>用「重點條列器」整理重點</p>
+                        <p>每頁 3-5 個項目</p>
+                        <h3>結尾頁</h3>
+                        <p>用「結語生成器」寫總結</p>
+                        <p>加上行動呼籲</p>
+                    </div>
+                    <div>
+                        <h3>範例：內容頁生成</h3>
+                        <div class="prompt-box" style="font-size: 12px;">請把以下內容整理成簡報重點：
+
+【貼上 NotebookLM 的回答】
+
+請用以下格式輸出：
+- 標題（10 字以內）
+- 重點 1（20 字以內）
+- 重點 2（20 字以內）
+- 重點 3（20 字以內）
+- 講者備註（50 字）</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 四大修改工具 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 11</p>
+                <h2>進階：四大修改工具介紹 <span class="part-badge">Part 3/4</span></h2>
+                <div class="concept-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="concept-card">
+                        <h3>1. PDNob PDF 編輯器</h3>
+                        <p>OCR 精準度高，直接編輯文字</p>
+                        <p><strong>適合：</strong>修改文字/數據</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>2. NotebookLM 簡報編輯器</h3>
+                        <p>一鍵移除浮水印（台灣開發）</p>
+                        <p><strong>適合：</strong>NotebookLM 輸出後製</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>3. Canva Pro</h3>
+                        <p>魔法抓取功能，豐富設計資源</p>
+                        <p><strong>適合：</strong>視覺調整升級</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>4. Lovart</h3>
+                        <p>AI 圖層拆解，深度視覺編輯</p>
+                        <p><strong>適合：</strong>精細圖層編輯</p>
+                    </div>
+                </div>
+                <div class="box info" style="margin-top: 10px;">
+                    <strong>工具選擇：</strong>文字修改 → PDNob | 移除浮水印 → NotebookLM 編輯器 | 美化設計 → Canva | 精細編輯 → Lovart
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 12：套用模板 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 12</p>
+                <h2>實作 12：套用到 HTML 模板，完成初版 <span class="part-badge">Part 4/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>操作步驟</h3>
+                        <p><span class="step-number">1</span>複製 template.html 為新檔案</p>
+                        <p><span class="step-number">2</span>用搜尋功能找到【】標記</p>
+                        <p><span class="step-number">3</span>把 AI 生成的內容貼進去</p>
+                        <p><span class="step-number">4</span>儲存並用瀏覽器預覽</p>
+                        <p><span class="step-number">5</span>調整排版，確認沒問題</p>
+                    </div>
+                    <div>
+                        <h3>完成確認</h3>
+                        <ul>
+                            <li>封面頁有標題和副標題</li>
+                            <li>內容頁有 3-5 個重點</li>
+                            <li>結尾頁有總結和行動呼籲</li>
+                            <li>瀏覽器預覽正常</li>
+                        </ul>
+                        <div class="box success">
+                            <strong>恭喜！</strong>Day 1 的初版簡報完成了！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 本章完成 -->
+        <div class="slide">
+            <div class="content-card cover-content">
+                <h1>Part 5 完成！</h1>
+                <p class="cover-subtitle">你已經有了完整的 Prompt 工具組和初版簡報</p>
+                <div class="concept-grid" style="margin-top: 30px;">
+                    <div class="concept-card">
+                        <h3>5 個 Prompt</h3>
+                        <p>可重複使用的模板</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>AI 生成內容</h3>
+                        <p>標題、重點、結語</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>初版簡報</h3>
+                        <p>套用模板完成</p>
+                    </div>
+                </div>
+                <p class="cover-info" style="margin-top: 30px;">
+                    <a href="Part6_進階技巧與Skill建立.html" style="color: #667eea; font-weight: bold; text-decoration: none;">
+                        下一章：Part 6 - 進階技巧與 Skill 建立 →
+                    </a>
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const container = document.getElementById('indicatorContainer'); slides.forEach((_, i) => { const dot = document.createElement('div'); dot.className = 'dot'; dot.onclick = () => goToSlide(i); container.appendChild(dot); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); document.getElementById('pageIndicator').textContent = `${index + 1} / ${totalSlides}`; }
+        function changeSlide(d) { showSlide(currentSlide + d); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

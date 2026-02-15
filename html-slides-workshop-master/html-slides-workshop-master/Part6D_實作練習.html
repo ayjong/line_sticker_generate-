@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Part 6D - 實作練習</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 18px; font-weight: 700; color: #fff; }
+        .nav-buttons { display: flex; gap: 10px; }
+        .nav-btn { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: white; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 600; text-decoration: none; }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.4); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 55px; height: 55px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 22px; cursor: pointer; z-index: 9000; display: flex; align-items: center; justify-content: center; }
+        .prev-arrow { left: 25px; } .next-arrow { right: 25px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 30px 80px; opacity: 0; transition: opacity 0.4s ease; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255, 255, 255, 0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); padding: 35px 45px; max-width: 1300px; width: 100%; max-height: 85vh; overflow-y: auto; }
+        h1 { color: #667eea; font-size: 42px; margin-bottom: 20px; text-align: center; }
+        h2 { color: #764ba2; font-size: 28px; margin-bottom: 20px; border-bottom: 3px solid #667eea; padding-bottom: 10px; }
+        h3 { color: #667eea; font-size: 20px; margin: 18px 0 12px 0; }
+        p, li { font-size: 17px; line-height: 1.8; color: #444; margin-bottom: 10px; }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 5px; font-family: 'Consolas', monospace; color: #d63384; font-size: 15px; }
+        pre { background: #282c34; color: #abb2bf; padding: 18px; border-radius: 12px; margin: 15px 0; font-size: 14px; font-family: 'Consolas', monospace; overflow-x: auto; }
+        .box { padding: 15px 20px; border-radius: 12px; margin: 15px 0; border-left: 5px solid; }
+        .info { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .danger { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .three-column { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .two-column, .three-column { grid-template-columns: 1fr; } .slide { padding: 20px; } }
+        .indicators { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 4000; padding: 10px 18px; background: rgba(0,0,0,0.35); border-radius: 25px; }
+        .dot { width: 10px; height: 10px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #fff; transform: scale(1.3); }
+        .cover-content { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 55vh; }
+        .cover-content h1 { font-size: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .cover-subtitle { font-size: 24px; color: #764ba2; margin-bottom: 25px; }
+        .cover-info { font-size: 16px; color: #888; margin-top: 30px; }
+        .tag-badge { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 16px; border-radius: 20px; font-size: 14px; margin: 3px; }
+        .highlight { background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); padding: 20px; border-radius: 15px; margin: 15px 0; }
+        .nav-buttons-bottom { display: flex; justify-content: center; gap: 15px; margin-top: 30px; flex-wrap: wrap; }
+        .nav-btn-large { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 35px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
+        .nav-btn-large:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5); }
+        .nav-btn-outline { background: transparent; border: 2px solid #667eea; color: #667eea; padding: 13px 33px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 16px; transition: all 0.3s ease; }
+        .nav-btn-outline:hover { background: #667eea; color: white; }
+        .step-number { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 40px; height: 40px; border-radius: 50%; text-align: center; line-height: 40px; font-size: 20px; font-weight: 700; margin-right: 15px; }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-title">Part 6D - 實作練習</div>
+        <div class="nav-buttons">
+            <a href="Part6_進階技巧與Skill建立.html" class="nav-btn">📚 學習地圖</a>
+            <a href="index.html" class="nav-btn">🏠 首頁</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">全螢幕</button>
+            <span class="nav-btn" id="pageIndicator">1 / 10</span>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+        <!-- 封面 -->
+        <div class="slide active">
+            <div class="content-card cover-content">
+                <h1>Part 6D：實作練習</h1>
+                <p class="cover-subtitle">動手建立「專案初始化器」Skill</p>
+                <div style="margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <span class="tag-badge">Step by Step</span>
+                    <span class="tag-badge">README.md</span>
+                    <span class="tag-badge">.gitignore</span>
+                    <span class="tag-badge">package.json</span>
+                </div>
+                <p class="cover-info">曾慶良(阿亮老師) | AI 協作簡報實戰工作坊</p>
+            </div>
+        </div>
+
+        <!-- 實作目標 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🎯 實作目標：專案初始化器</h2>
+                <div class="two-column">
+                    <div>
+                        <h3>我們要做什麼？</h3>
+                        <p>建立一個 Skill，能自動產生：</p>
+                        <ul>
+                            <li>✅ <strong>README.md</strong>（專案說明）</li>
+                            <li>✅ <strong>.gitignore</strong>（Git 忽略檔案）</li>
+                            <li>✅ <strong>package.json</strong>（專案設定）</li>
+                        </ul>
+                        <h3 style="margin-top: 20px;">觸發方式</h3>
+                        <p>只要說：</p>
+                        <ul>
+                            <li>「幫我初始化一個新專案」</li>
+                            <li>「init project」</li>
+                            <li>「建立專案」</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>完成後的資料夾結構</h3>
+                        <pre style="font-size: 15px;">project-initializer/
+├── SKILL.md
+└── resources/
+    ├── readme-template.md
+    ├── gitignore-template.txt
+    └── package-template.json</pre>
+                        <div class="box success" style="margin-top: 15px;">
+                            <strong>Before：</strong>手動建立 3 個檔案，每次都要改內容<br><br>
+                            <strong>After：</strong>一句話，AI 自動完成！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: 建立資料夾 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2><span class="step-number">1</span>建立資料夾結構</h2>
+                <div class="two-column">
+                    <div>
+                        <h3>🔵 Google Antigravity 用戶</h3>
+                        <pre style="font-size: 14px;"># 在專案根目錄執行
+mkdir -p .agent/skills/project-initializer/resources</pre>
+                        <p style="margin-top: 15px;">建立完成後的路徑：</p>
+                        <pre style="font-size: 13px;">你的專案/
+└── .agent/
+    └── skills/
+        └── project-initializer/
+            └── resources/</pre>
+                    </div>
+                    <div>
+                        <h3>🟣 Claude Code 用戶</h3>
+                        <pre style="font-size: 14px;"># 在專案根目錄執行
+mkdir -p .claude/skills/project-initializer/resources</pre>
+                        <p style="margin-top: 15px;">建立完成後的路徑：</p>
+                        <pre style="font-size: 13px;">你的專案/
+└── .claude/
+    └── skills/
+        └── project-initializer/
+            └── resources/</pre>
+                    </div>
+                </div>
+                <div class="box info" style="margin-top: 20px;">
+                    <strong>💡 Windows 用戶提示：</strong>可以用檔案總管手動建立資料夾，記得在「檢視」開啟「顯示隱藏項目」才能看到 .agent 或 .claude 資料夾
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: 撰寫 SKILL.md -->
+        <div class="slide">
+            <div class="content-card">
+                <h2><span class="step-number">2</span>撰寫 SKILL.md</h2>
+                <pre style="font-size: 12px; max-height: 60vh; overflow-y: auto;">---
+name: project-initializer
+description: "Initialize new projects with standard files. Triggers: init project, 初始化專案, create project, setup project, 建立專案. Creates: README.md, .gitignore, package.json with customized content."
+---
+
+# Project Initializer
+
+This skill creates standard project files with customized content.
+
+## Instructions
+
+### Step 1: Gather Information
+1. Ask user for the project name (MUST be lowercase, use hyphens for spaces)
+2. Ask user for a brief project description (1-2 sentences)
+
+### Step 2: Create README.md
+1. Read the template from `resources/readme-template.md`
+2. Replace `{{PROJECT_NAME}}` with the user's project name
+3. Replace `{{PROJECT_DESCRIPTION}}` with the user's description
+4. Write the result to `./README.md`
+
+### Step 3: Create .gitignore
+1. Read the template from `resources/gitignore-template.txt`
+2. Write the content to `./.gitignore` (no modifications needed)
+
+### Step 4: Create package.json
+1. Read the template from `resources/package-template.json`
+2. Replace `{{PROJECT_NAME}}` and `{{PROJECT_DESCRIPTION}}`
+3. Write the result to `./package.json`
+
+### Step 5: Report Completion
+1. List all created files
+2. Show a brief summary of what was set up</pre>
+            </div>
+        </div>
+
+        <!-- Step 3: 建立模板 - readme -->
+        <div class="slide">
+            <div class="content-card">
+                <h2><span class="step-number">3</span>建立模板檔案（1/3）</h2>
+                <div class="two-column">
+                    <div>
+                        <h3>📄 readme-template.md</h3>
+                        <pre style="font-size: 14px;"># {{PROJECT_NAME}}
+
+{{PROJECT_DESCRIPTION}}
+
+## 安裝
+
+```bash
+npm install
+```
+
+## 使用方式
+
+```bash
+npm start
+```
+
+## 開發
+
+```bash
+npm run dev
+```
+
+## 授權
+
+MIT License</pre>
+                    </div>
+                    <div>
+                        <h3>📌 說明</h3>
+                        <ul>
+                            <li><code>{{PROJECT_NAME}}</code> 會被替換成專案名稱</li>
+                            <li><code>{{PROJECT_DESCRIPTION}}</code> 會被替換成專案描述</li>
+                            <li>其他內容保持固定，每個專案都一樣</li>
+                        </ul>
+                        <div class="box info" style="margin-top: 20px;">
+                            <strong>💡 存檔位置：</strong><br>
+                            <code>resources/readme-template.md</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: 建立模板 - gitignore & package -->
+        <div class="slide">
+            <div class="content-card">
+                <h2><span class="step-number">3</span>建立模板檔案（2/3 & 3/3）</h2>
+                <div class="two-column">
+                    <div>
+                        <h3>📄 gitignore-template.txt</h3>
+                        <pre style="font-size: 14px;"># Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+build/
+
+# System
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/</pre>
+                    </div>
+                    <div>
+                        <h3>📄 package-template.json</h3>
+                        <pre style="font-size: 14px;">{
+  "name": "{{PROJECT_NAME}}",
+  "version": "1.0.0",
+  "description": "{{PROJECT_DESCRIPTION}}",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "echo \"No tests\" && exit 0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}</pre>
+                        <div class="box warning" style="margin-top: 15px;">
+                            <strong>⚠️ 注意：</strong>JSON 檔案的 <code>{{變數}}</code> 要保留雙引號！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: 測試 Skill -->
+        <div class="slide">
+            <div class="content-card">
+                <h2><span class="step-number">4</span>測試你的 Skill</h2>
+                <div class="two-column">
+                    <div>
+                        <h3>📝 測試步驟</h3>
+                        <ol>
+                            <li>開啟 <strong>Claude Code</strong> 或 <strong>Antigravity</strong></li>
+                            <li>輸入觸發指令：<br>「<strong>幫我初始化一個新專案</strong>」</li>
+                            <li>AI 會詢問專案名稱和描述</li>
+                            <li>提供資訊後，AI 開始工作</li>
+                            <li>檢查專案根目錄是否出現三個檔案</li>
+                        </ol>
+                    </div>
+                    <div>
+                        <h3>✅ 預期結果</h3>
+                        <pre style="font-size: 14px;">你的專案/
+├── README.md        ← 新建立
+├── .gitignore       ← 新建立
+├── package.json     ← 新建立
+│
+└── .claude/skills/project-initializer/
+    ├── SKILL.md
+    └── resources/
+        └── ...</pre>
+                        <div class="box success" style="margin-top: 15px;">
+                            <strong>🎉 成功標準：</strong>三個檔案都存在，且內容中的 {{變數}} 已被替換成你提供的值！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 常見問題排解 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🔧 常見問題排解</h2>
+                <div class="three-column">
+                    <div class="box danger">
+                        <h3>問題 1</h3>
+                        <p><strong>Skill 沒有被觸發</strong></p>
+                        <hr style="margin: 10px 0; border-color: #f5c6cb;">
+                        <p><strong>原因：</strong>description 的關鍵字不夠多</p>
+                        <p><strong>解法：</strong>加入更多觸發詞，中英文都加</p>
+                    </div>
+                    <div class="box danger">
+                        <h3>問題 2</h3>
+                        <p><strong>YAML 格式錯誤</strong></p>
+                        <hr style="margin: 10px 0; border-color: #f5c6cb;">
+                        <p><strong>原因：</strong>冒號後沒空格、減號數量錯</p>
+                        <p><strong>解法：</strong>用 YAML 驗證器檢查</p>
+                    </div>
+                    <div class="box danger">
+                        <h3>問題 3</h3>
+                        <p><strong>找不到模板檔案</strong></p>
+                        <hr style="margin: 10px 0; border-color: #f5c6cb;">
+                        <p><strong>原因：</strong>路徑或檔名大小寫錯誤</p>
+                        <p><strong>解法：</strong>確認路徑完全正確</p>
+                    </div>
+                </div>
+                <div class="box info" style="margin-top: 20px;">
+                    <strong>💡 除錯技巧：</strong>請 AI「顯示 SKILL.md 的內容」，確認它讀到的是正確版本
+                </div>
+            </div>
+        </div>
+
+        <!-- Part 6 總結 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📋 Part 6 完整回顧</h2>
+                <div class="two-column">
+                    <div class="highlight">
+                        <h3>🧠 Part A：認知與架構</h3>
+                        <ul>
+                            <li>Skill = AI 的食譜/SOP</li>
+                            <li>雙平台支援（.agent / .claude）</li>
+                            <li>只有 SKILL.md 是必要的</li>
+                        </ul>
+                        <h3 style="margin-top: 15px;">✍️ Part B：SKILL.md 撰寫</h3>
+                        <ul>
+                            <li>Frontmatter（name + description）</li>
+                            <li>Description 決定觸發時機</li>
+                            <li>善用 MUST / NEVER / Ask user</li>
+                        </ul>
+                    </div>
+                    <div class="highlight">
+                        <h3>📁 Part C：資料夾結構</h3>
+                        <ul>
+                            <li>scripts/：Python 腳本</li>
+                            <li>data/：CSV、JSON 資料</li>
+                            <li>resources/：模板檔案</li>
+                        </ul>
+                        <h3 style="margin-top: 15px;">🔧 Part D：實作練習</h3>
+                        <ul>
+                            <li>建立專案初始化器 Skill</li>
+                            <li>三個模板檔案</li>
+                            <li>測試與除錯</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 導航頁 -->
+        <div class="slide">
+            <div class="content-card cover-content">
+                <h1 style="font-size: 44px;">🎉 Part 6 全部完成！</h1>
+                <p class="cover-subtitle">恭喜你學會建立自己的 AI Skill 了</p>
+                <p style="font-size: 18px; color: #666; margin-top: 15px;">
+                    從今天開始，把常用的工作流程都打包成 Skill<br>
+                    讓 AI 成為你的超級助手！
+                </p>
+                <div style="margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <span class="tag-badge">SKILL.md</span>
+                    <span class="tag-badge">Frontmatter</span>
+                    <span class="tag-badge">Instructions</span>
+                    <span class="tag-badge">模板系統</span>
+                    <span class="tag-badge">雙平台支援</span>
+                </div>
+                <div class="nav-buttons-bottom">
+                    <a href="Part6_進階技巧與Skill建立.html" class="nav-btn-outline">📚 回到學習地圖</a>
+                    <a href="index.html" class="nav-btn-large">🏠 返回課程首頁</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const container = document.getElementById('indicatorContainer'); slides.forEach((_, i) => { const dot = document.createElement('div'); dot.className = 'dot'; dot.onclick = () => goToSlide(i); container.appendChild(dot); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); document.getElementById('pageIndicator').textContent = `${index + 1} / ${totalSlides}`; }
+        function changeSlide(d) { showSlide(currentSlide + d); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

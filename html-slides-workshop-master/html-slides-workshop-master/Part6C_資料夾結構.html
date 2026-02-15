@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Part 6C - 進階資料夾結構</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 18px; font-weight: 700; color: #fff; }
+        .nav-buttons { display: flex; gap: 10px; }
+        .nav-btn { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: white; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 600; text-decoration: none; }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.4); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 55px; height: 55px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 22px; cursor: pointer; z-index: 9000; display: flex; align-items: center; justify-content: center; }
+        .prev-arrow { left: 25px; } .next-arrow { right: 25px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 30px 80px; opacity: 0; transition: opacity 0.4s ease; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255, 255, 255, 0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); padding: 35px 45px; max-width: 1300px; width: 100%; max-height: 85vh; overflow-y: auto; }
+        h1 { color: #667eea; font-size: 42px; margin-bottom: 20px; text-align: center; }
+        h2 { color: #764ba2; font-size: 28px; margin-bottom: 20px; border-bottom: 3px solid #667eea; padding-bottom: 10px; }
+        h3 { color: #667eea; font-size: 20px; margin: 18px 0 12px 0; }
+        p, li { font-size: 17px; line-height: 1.8; color: #444; margin-bottom: 10px; }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 5px; font-family: 'Consolas', monospace; color: #d63384; font-size: 15px; }
+        pre { background: #282c34; color: #abb2bf; padding: 18px; border-radius: 12px; margin: 15px 0; font-size: 14px; font-family: 'Consolas', monospace; overflow-x: auto; }
+        .box { padding: 15px 20px; border-radius: 12px; margin: 15px 0; border-left: 5px solid; }
+        .info { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        @media (max-width: 900px) { .two-column { grid-template-columns: 1fr; } .slide { padding: 20px; } }
+        .indicators { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 4000; padding: 10px 18px; background: rgba(0,0,0,0.35); border-radius: 25px; }
+        .dot { width: 10px; height: 10px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #fff; transform: scale(1.3); }
+        .cover-content { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 55vh; }
+        .cover-content h1 { font-size: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .cover-subtitle { font-size: 24px; color: #764ba2; margin-bottom: 25px; }
+        .cover-info { font-size: 16px; color: #888; margin-top: 30px; }
+        .tag-badge { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 16px; border-radius: 20px; font-size: 14px; margin: 3px; }
+        .highlight { background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); padding: 20px; border-radius: 15px; margin: 15px 0; }
+        .nav-buttons-bottom { display: flex; justify-content: center; gap: 15px; margin-top: 30px; flex-wrap: wrap; }
+        .nav-btn-large { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 35px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
+        .nav-btn-large:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5); }
+        .nav-btn-outline { background: transparent; border: 2px solid #667eea; color: #667eea; padding: 13px 33px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 16px; transition: all 0.3s ease; }
+        .nav-btn-outline:hover { background: #667eea; color: white; }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-title">Part 6C - 進階資料夾結構</div>
+        <div class="nav-buttons">
+            <a href="Part6_進階技巧與Skill建立.html" class="nav-btn">📚 學習地圖</a>
+            <a href="index.html" class="nav-btn">🏠 首頁</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">全螢幕</button>
+            <span class="nav-btn" id="pageIndicator">1 / 6</span>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+        <!-- 封面 -->
+        <div class="slide active">
+            <div class="content-card cover-content">
+                <h1>Part 6C：進階資料夾結構</h1>
+                <p class="cover-subtitle">scripts / data / resources 的用法</p>
+                <div style="margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <span class="tag-badge">Python 腳本</span>
+                    <span class="tag-badge">CSV / JSON</span>
+                    <span class="tag-badge">模板檔案</span>
+                </div>
+                <p class="cover-info">曾慶良(阿亮老師) | AI 協作簡報實戰工作坊</p>
+            </div>
+        </div>
+
+        <!-- scripts 資料夾 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🐍 scripts/ 資料夾：Python 腳本</h2>
+                <div class="two-column">
+                    <div>
+                        <h3>📌 用途</h3>
+                        <p>放置 Python 或 Shell 腳本，讓 AI 透過 <code>run_command</code> 執行複雜邏輯</p>
+                        <h3 style="margin-top: 20px;">🎯 適用場景</h3>
+                        <ul>
+                            <li>資料處理（CSV、JSON 轉換）</li>
+                            <li>API 呼叫（網路請求）</li>
+                            <li>檔案批次處理</li>
+                            <li>複雜計算或資料轉換</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>📄 SKILL.md 中如何呼叫</h3>
+                        <pre style="font-size: 14px;">### Step 2: Search Data
+Run the search script:
+```bash
+python scripts/search.py \
+  --keyword "{{user_keyword}}"
+```
+
+The script will return matching
+results from the data folder.</pre>
+                        <h3 style="margin-top: 15px;">📄 search.py 範例</h3>
+                        <pre style="font-size: 13px;">import argparse
+import csv
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--keyword')
+args = parser.parse_args()
+
+with open('data/styles.csv') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        if args.keyword in row['name']:
+            print(row)</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- data 資料夾 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📊 data/ 資料夾：CSV / JSON 資料</h2>
+                <div class="two-column">
+                    <div>
+                        <h3>📌 用途</h3>
+                        <p>存放 CSV、JSON 等資料檔，供 Python 腳本查詢使用</p>
+                        <h3 style="margin-top: 20px;">📄 CSV 資料範例 (styles.csv)</h3>
+                        <pre style="font-size: 14px;">name,primary_color,font,description
+modern,#3498db,Inter,現代簡約風格
+classic,#2c3e50,Georgia,經典傳統風格
+playful,#e74c3c,Comic Sans,活潑有趣風格
+minimal,#333333,Helvetica,極簡設計風格</pre>
+                    </div>
+                    <div>
+                        <h3>📄 JSON 設定範例 (config.json)</h3>
+                        <pre style="font-size: 14px;">{
+  "default_author": "Your Name",
+  "default_license": "MIT",
+  "templates": {
+    "readme": "resources/readme.md",
+    "gitignore": "resources/gitignore.txt"
+  },
+  "options": {
+    "auto_git_init": true,
+    "create_src_folder": true
+  }
+}</pre>
+                        <div class="box success" style="margin-top: 15px;">
+                            <strong>💡 好處：</strong>將資料與邏輯分離，方便維護與擴充。修改資料不需要改腳本！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- resources 資料夾 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📄 resources/ 資料夾：模板檔案</h2>
+                <div class="two-column">
+                    <div>
+                        <h3>📌 用途</h3>
+                        <p>存放模板檔案（HTML、JSON、Markdown 等），AI 讀取後填入參數</p>
+                        <h3 style="margin-top: 20px;">🔖 模板變數格式</h3>
+                        <ul>
+                            <li><code>{{PROJECT_NAME}}</code></li>
+                            <li><code>{{PROJECT_DESCRIPTION}}</code></li>
+                            <li><code>{{AUTHOR_NAME}}</code></li>
+                            <li><code>{{FIREBASE_CONFIG}}</code></li>
+                        </ul>
+                        <div class="box info" style="margin-top: 15px;">
+                            AI 會讀取模板，把 <code>{{變數}}</code> 替換成使用者提供的值
+                        </div>
+                    </div>
+                    <div>
+                        <h3>📄 readme-template.md 範例</h3>
+                        <pre style="font-size: 14px;"># {{PROJECT_NAME}}
+
+{{PROJECT_DESCRIPTION}}
+
+## 安裝
+
+```bash
+npm install
+```
+
+## 使用方式
+
+```bash
+npm start
+```
+
+## 作者
+
+{{AUTHOR_NAME}}
+
+## 授權
+
+MIT License</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Part C 重點回顧 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📋 Part C 重點回顧</h2>
+                <div class="highlight">
+                    <h3 style="text-align: center; margin-bottom: 20px;">三種選用資料夾的用途</h3>
+                    <div class="two-column">
+                        <div>
+                            <h3>🐍 scripts/</h3>
+                            <ul>
+                                <li>放 Python / Shell 腳本</li>
+                                <li>處理複雜邏輯與計算</li>
+                                <li>API 呼叫、批次處理</li>
+                            </ul>
+                            <h3 style="margin-top: 20px;">📊 data/</h3>
+                            <ul>
+                                <li>放 CSV / JSON 資料檔</li>
+                                <li>供腳本查詢使用</li>
+                                <li>資料與邏輯分離</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3>📄 resources/</h3>
+                            <ul>
+                                <li>放模板檔案</li>
+                                <li>使用 <code>{{變數}}</code> 格式</li>
+                                <li>AI 讀取後自動替換參數</li>
+                            </ul>
+                            <div class="box warning" style="margin-top: 20px;">
+                                <strong>記住：</strong>這三個資料夾都是<strong>選用</strong>的！<br>只有 SKILL.md 是必要的。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 導航頁 -->
+        <div class="slide">
+            <div class="content-card cover-content">
+                <h1 style="font-size: 40px;">🎉 Part C 完成！</h1>
+                <p class="cover-subtitle">你已經學會進階資料夾結構了</p>
+                <p style="font-size: 18px; color: #666; margin-top: 15px;">
+                    接下來進入實作練習，動手建立你的第一個 Skill！
+                </p>
+                <div class="nav-buttons-bottom">
+                    <a href="Part6_進階技巧與Skill建立.html" class="nav-btn-outline">📚 回到學習地圖</a>
+                    <a href="Part6D_實作練習.html" class="nav-btn-large">前往 Part D：實作練習 →</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const container = document.getElementById('indicatorContainer'); slides.forEach((_, i) => { const dot = document.createElement('div'); dot.className = 'dot'; dot.onclick = () => goToSlide(i); container.appendChild(dot); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); document.getElementById('pageIndicator').textContent = `${index + 1} / ${totalSlides}`; }
+        function changeSlide(d) { showSlide(currentSlide + d); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

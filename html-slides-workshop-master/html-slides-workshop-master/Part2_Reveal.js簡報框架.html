@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Part 2 - Reveal.js 簡報框架</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            color: #333;
+        }
+        .nav-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            z-index: 10000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-title { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.4); transform: translateY(-2px); }
+        .nav-arrow {
+            position: fixed; top: 50%; transform: translateY(-50%);
+            background: rgba(255,255,255,0.25); color: white;
+            width: 60px; height: 60px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.4);
+            font-size: 24px; cursor: pointer; z-index: 9000;
+            transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; }
+        .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide {
+            position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px);
+            display: none; align-items: center; justify-content: center;
+            padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10;
+        }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card {
+            background: rgba(255, 255, 255, 0.98); border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            padding: 35px 45px; max-width: 1400px; width: 95%;
+            max-height: 88vh; overflow-y: auto;
+        }
+        h1 { color: #667eea; font-size: 40px; margin-bottom: 18px; text-align: center; font-weight: 800; }
+        h2 { color: #764ba2; font-size: 28px; margin-bottom: 18px; border-bottom: 3px solid #667eea; padding-bottom: 10px; font-weight: 700; }
+        h3 { color: #667eea; font-size: 20px; margin: 18px 0 10px 0; font-weight: 600; }
+        p, li { font-size: 16px; line-height: 1.7; color: #444; margin-bottom: 8px; }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.9em; }
+        pre { background: #282c34; color: #abb2bf; padding: 15px; border-radius: 10px; overflow-x: auto; margin: 12px 0; font-size: 13px; line-height: 1.5; font-family: 'Consolas', monospace; }
+        .box { padding: 12px 18px; border-radius: 10px; margin: 12px 0; border-left: 4px solid; font-size: 15px; }
+        .info { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 15px; }
+        .concept-card { background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%); padding: 15px; border-radius: 12px; border: 2px solid #e8ecff; transition: all 0.3s ease; }
+        .concept-card:hover { transform: translateY(-3px); border-color: #667eea; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2); }
+        .tag-badge { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 15px; font-size: 13px; margin: 2px; font-weight: 500; }
+        .time-badge { display: inline-block; background: #667eea; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; font-weight: 700; font-size: 13px; margin-right: 8px; }
+        .screenshot { max-width: 100%; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); margin: 12px 0; border: 2px solid #e0e0e0; }
+        .screenshot-container { text-align: center; margin: 12px 0; }
+        .screenshot-caption { font-size: 13px; color: #666; margin-top: 8px; font-style: italic; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+        @media (max-width: 900px) { .two-column { grid-template-columns: 1fr; } }
+        .indicators { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 4000; padding: 8px 15px; background: rgba(0,0,0,0.3); border-radius: 25px; backdrop-filter: blur(5px); flex-wrap: wrap; max-width: 90%; justify-content: center; }
+        .dot { width: 8px; height: 8px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s ease; }
+        .dot.active { background: #fff; transform: scale(1.4); }
+        .dot:hover { background: rgba(255,255,255,0.7); }
+        .cover-content { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 50vh; }
+        .cover-content h1 { font-size: 44px; margin-bottom: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .cover-subtitle { font-size: 22px; color: #764ba2; margin-bottom: 20px; font-weight: 400; }
+        .cover-info { font-size: 15px; color: #888; margin-top: 25px; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+        th, td { border: 1px solid #e0e0e0; padding: 10px 12px; text-align: left; }
+        th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; }
+        tr:nth-child(even) { background: #f8f9ff; }
+        tr:hover { background: #f0f2ff; }
+        .part-badge { display: inline-block; background: #28a745; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 10px; }
+        .keyboard-key { display: inline-block; background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px; padding: 2px 8px; font-family: monospace; font-size: 13px; box-shadow: 0 2px 0 #999; }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-title">Part 2 - Reveal.js 簡報框架</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">首頁</a>
+            <a href="Part1_HTML基礎入門.html" class="nav-btn">← 上一章</a>
+            <a href="Part3_手繪設計與AI生成.html" class="nav-btn">下一章 →</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">全螢幕</button>
+            <span class="nav-btn" id="pageIndicator">1 / 8</span>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+        <!-- 封面 -->
+        <div class="slide active">
+            <div class="content-card cover-content">
+                <h1>Part 2：Reveal.js 簡報框架</h1>
+                <p class="cover-subtitle">打開你的第一個 HTML 簡報</p>
+                <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <span class="tag-badge">Reveal.js</span>
+                    <span class="tag-badge">鍵盤操作</span>
+                    <span class="tag-badge">總覽模式</span>
+                    <span class="tag-badge">講者備註</span>
+                </div>
+                <p class="cover-info">曾慶良(阿亮老師) | AI 協作簡報實戰工作坊<br>實作 3 | Time 3</p>
+            </div>
+        </div>
+
+        <!-- 實作 3 開始 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 3</p>
+                <h2>實作 3：打開你的第一個 HTML 簡報 <span class="part-badge">Part 1/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>認識 Reveal.js</h3>
+                        <p>把 HTML 變成可切換的簡報框架</p>
+                        <div class="box success">
+                            <strong>Reveal.js 的優點：</strong><br>
+                            - 免費開源<br>
+                            - 用瀏覽器就能看，不用安裝軟體<br>
+                            - 可放到網路上分享<br>
+                            - 支援鍵盤操作、動畫效果<br>
+                            - 講者備註、總覽模式等專業功能
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img15.png" alt="Reveal.js 簡報" class="screenshot">
+                        <p class="screenshot-caption">亮師 15：Reveal.js 簡報畫面</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 體驗官方範例 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 3</p>
+                <h2>體驗 Reveal.js 官方範例 <span class="part-badge">Part 2/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>操作步驟</h3>
+                        <p><span class="step-number">1</span>打開 Chrome 瀏覽器</p>
+                        <p><span class="step-number">2</span>輸入：<code>revealjs.com/demo/</code></p>
+                        <p><span class="step-number">3</span>用方向鍵操作簡報</p>
+                        <table>
+                            <tr>
+                                <td><span class="keyboard-key">→</span></td>
+                                <td>下一頁</td>
+                            </tr>
+                            <tr>
+                                <td><span class="keyboard-key">←</span></td>
+                                <td>上一頁</td>
+                            </tr>
+                            <tr>
+                                <td><span class="keyboard-key">↓</span></td>
+                                <td>進入子頁面</td>
+                            </tr>
+                            <tr>
+                                <td><span class="keyboard-key">↑</span></td>
+                                <td>離開子頁面</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img16.png" alt="方向鍵操作" class="screenshot">
+                        <p class="screenshot-caption">亮師 16：按方向鍵切換頁面</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 特殊功能 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 3</p>
+                <h2>HTML 簡報的特殊功能 <span class="part-badge">Part 3/6</span></h2>
+                <div class="concept-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="concept-card">
+                        <h3>按 <span class="keyboard-key">Esc</span></h3>
+                        <p><strong>總覽模式</strong></p>
+                        <p>一次看到所有頁面，像攤開的卡片</p>
+                        <p>適合快速找到特定頁面</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>按 <span class="keyboard-key">F</span></h3>
+                        <p><strong>全螢幕模式</strong></p>
+                        <p>簡報佔滿整個螢幕</p>
+                        <p>正式簡報時更專業</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>按 <span class="keyboard-key">S</span></h3>
+                        <p><strong>講者備註視窗</strong></p>
+                        <p>顯示備註、下一頁預覽、計時器</p>
+                        <p>像專業演講者一樣！</p>
+                    </div>
+                </div>
+                <div class="screenshot-container" style="margin-top: 15px;">
+                    <img src="images/img17.png" alt="總覽模式" class="screenshot" style="max-height: 180px;">
+                    <p class="screenshot-caption">亮師 17：按 Esc 進入總覽模式</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 鍵盤快捷鍵 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 3</p>
+                <h2>鍵盤快捷鍵完整整理 <span class="part-badge">Part 4/6</span></h2>
+                <table>
+                    <tr>
+                        <th>按鍵</th>
+                        <th>功能</th>
+                        <th>使用時機</th>
+                    </tr>
+                    <tr>
+                        <td><span class="keyboard-key">→</span></td>
+                        <td>下一頁</td>
+                        <td>正常播放簡報</td>
+                    </tr>
+                    <tr>
+                        <td><span class="keyboard-key">←</span></td>
+                        <td>上一頁</td>
+                        <td>回到前一頁</td>
+                    </tr>
+                    <tr>
+                        <td><span class="keyboard-key">↓</span> / <span class="keyboard-key">↑</span></td>
+                        <td>子頁面切換</td>
+                        <td>有垂直頁面時</td>
+                    </tr>
+                    <tr>
+                        <td><span class="keyboard-key">Esc</span></td>
+                        <td>總覽模式</td>
+                        <td>快速找到特定頁面</td>
+                    </tr>
+                    <tr>
+                        <td><span class="keyboard-key">F</span></td>
+                        <td>全螢幕</td>
+                        <td>正式簡報</td>
+                    </tr>
+                    <tr>
+                        <td><span class="keyboard-key">S</span></td>
+                        <td>講者備註</td>
+                        <td>雙螢幕簡報</td>
+                    </tr>
+                    <tr>
+                        <td><span class="keyboard-key">Home</span></td>
+                        <td>跳到第一頁</td>
+                        <td>從頭開始</td>
+                    </tr>
+                    <tr>
+                        <td><span class="keyboard-key">End</span></td>
+                        <td>跳到最後一頁</td>
+                        <td>跳到結尾</td>
+                    </tr>
+                    <tr>
+                        <td><span class="keyboard-key">B</span> / <span class="keyboard-key">.</span></td>
+                        <td>黑屏</td>
+                        <td>暫停講解時</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- HTML 結構 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 3</p>
+                <h2>Reveal.js 簡報的 HTML 結構 <span class="part-badge">Part 5/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>基本結構</h3>
+                        <pre>&lt;div class="reveal"&gt;
+  &lt;div class="slides"&gt;
+
+    &lt;section&gt;第一頁&lt;/section&gt;
+    &lt;section&gt;第二頁&lt;/section&gt;
+    &lt;section&gt;第三頁&lt;/section&gt;
+
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+                        <div class="box info">
+                            <strong>記住：</strong>每個 <code>&lt;section&gt;</code> = 簡報的一頁
+                        </div>
+                    </div>
+                    <div>
+                        <h3>結構說明</h3>
+                        <ul>
+                            <li><code>class="reveal"</code> - 簡報的最外層容器</li>
+                            <li><code>class="slides"</code> - 包住所有頁面</li>
+                            <li><code>&lt;section&gt;</code> - 每一頁簡報</li>
+                        </ul>
+                        <p>這就是我們實作 1 學的 Section 概念！</p>
+                        <div class="box success">
+                            <strong>巢狀 Section：</strong>Section 裡面再放 Section 會產生垂直（子）頁面
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 3 完成 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 3</p>
+                <h2>實作 3 完成確認 <span class="part-badge">Part 6/6</span></h2>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>體驗官方範例</h3>
+                        <p>打開 revealjs.com/demo/ 實際操作過</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>學會鍵盤操作</h3>
+                        <p>方向鍵、Esc、F、S 等快捷鍵</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>理解 HTML 結構</h3>
+                        <p>reveal → slides → section 的層次</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>打開本地檔案</h3>
+                        <p>成功用瀏覽器打開 index.html</p>
+                    </div>
+                </div>
+                <div class="box success" style="margin-top: 20px;">
+                    <strong>完成！</strong>你已經會操作 HTML 簡報了！接下來要設計你自己的版面。
+                </div>
+            </div>
+        </div>
+
+        <!-- 本章完成 -->
+        <div class="slide">
+            <div class="content-card cover-content">
+                <h1>Part 2 完成！</h1>
+                <p class="cover-subtitle">你已經會操作 Reveal.js 簡報了</p>
+                <div class="concept-grid" style="margin-top: 30px;">
+                    <div class="concept-card">
+                        <h3>Reveal.js</h3>
+                        <p>HTML 簡報框架</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>快捷鍵</h3>
+                        <p>Esc, F, S</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>HTML 結構</h3>
+                        <p>reveal > slides > section</p>
+                    </div>
+                </div>
+                <p class="cover-info" style="margin-top: 30px;">
+                    <a href="Part3_手繪設計與AI生成.html" style="color: #667eea; font-weight: bold; text-decoration: none;">
+                        下一章：Part 3 - 手繪設計與 AI 生成 →
+                    </a>
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function init() {
+            createIndicators();
+            showSlide(0);
+            updateButtons();
+            document.addEventListener('keydown', handleKeydown);
+        }
+
+        function handleKeydown(e) {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+            if (e.key === 'Home') goToSlide(0);
+            if (e.key === 'End') goToSlide(totalSlides - 1);
+        }
+
+        function createIndicators() {
+            const container = document.getElementById('indicatorContainer');
+            container.innerHTML = '';
+            slides.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                dot.onclick = () => goToSlide(index);
+                container.appendChild(dot);
+            });
+        }
+
+        function showSlide(index) {
+            if (index < 0) index = 0;
+            if (index >= totalSlides) index = totalSlides - 1;
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[index].classList.add('active');
+            currentSlide = index;
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, idx) => dot.classList.toggle('active', idx === index));
+            updateButtons();
+            document.getElementById('pageIndicator').textContent = `${index + 1} / ${totalSlides}`;
+        }
+
+        function changeSlide(direction) { showSlide(currentSlide + direction); }
+        function goToSlide(index) { showSlide(index); }
+        function updateButtons() {
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        }
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); }
+            else if (document.exitFullscreen) { document.exitFullscreen(); }
+        }
+        init();
+    </script>
+</body>
+</html>

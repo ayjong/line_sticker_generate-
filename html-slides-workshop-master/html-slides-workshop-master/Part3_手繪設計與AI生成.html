@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Part 3 - 手繪設計與 AI 生成</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .nav-title { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.4); transform: translateY(-2px); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .nav-arrow:hover { background: rgba(255,255,255,0.5); transform: translateY(-50%) scale(1.1); }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container { width: 100%; height: 100vh; padding-top: 60px; position: relative; z-index: 1; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; z-index: 10; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255, 255, 255, 0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); padding: 35px 45px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #667eea; font-size: 40px; margin-bottom: 18px; text-align: center; font-weight: 800; }
+        h2 { color: #764ba2; font-size: 28px; margin-bottom: 18px; border-bottom: 3px solid #667eea; padding-bottom: 10px; font-weight: 700; }
+        h3 { color: #667eea; font-size: 20px; margin: 18px 0 10px 0; font-weight: 600; }
+        p, li { font-size: 16px; line-height: 1.7; color: #444; margin-bottom: 8px; }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-family: 'Consolas', monospace; color: #d63384; font-weight: 600; font-size: 0.9em; }
+        pre { background: #282c34; color: #abb2bf; padding: 15px; border-radius: 10px; overflow-x: auto; margin: 12px 0; font-size: 13px; line-height: 1.5; font-family: 'Consolas', monospace; }
+        .box { padding: 12px 18px; border-radius: 10px; margin: 12px 0; border-left: 4px solid; font-size: 15px; }
+        .info { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 15px; }
+        .concept-card { background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%); padding: 15px; border-radius: 12px; border: 2px solid #e8ecff; transition: all 0.3s ease; }
+        .concept-card:hover { transform: translateY(-3px); border-color: #667eea; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2); }
+        .tag-badge { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 15px; font-size: 13px; margin: 2px; font-weight: 500; }
+        .time-badge { display: inline-block; background: #667eea; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; font-weight: 700; font-size: 13px; margin-right: 8px; }
+        .screenshot { max-width: 100%; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); margin: 12px 0; border: 2px solid #e0e0e0; }
+        .screenshot-container { text-align: center; margin: 12px 0; }
+        .screenshot-caption { font-size: 13px; color: #666; margin-top: 8px; font-style: italic; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+        @media (max-width: 900px) { .two-column { grid-template-columns: 1fr; } }
+        .indicators { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 4000; padding: 8px 15px; background: rgba(0,0,0,0.3); border-radius: 25px; backdrop-filter: blur(5px); flex-wrap: wrap; max-width: 90%; justify-content: center; }
+        .dot { width: 8px; height: 8px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s ease; }
+        .dot.active { background: #fff; transform: scale(1.4); }
+        .cover-content { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 50vh; }
+        .cover-content h1 { font-size: 44px; margin-bottom: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .cover-subtitle { font-size: 22px; color: #764ba2; margin-bottom: 20px; font-weight: 400; }
+        .cover-info { font-size: 15px; color: #888; margin-top: 25px; }
+        .part-badge { display: inline-block; background: #28a745; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 10px; }
+        .keyboard-key { display: inline-block; background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px; padding: 2px 8px; font-family: monospace; font-size: 13px; box-shadow: 0 2px 0 #999; }
+        .prompt-box { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 10px; margin: 10px 0; font-family: 'Consolas', monospace; font-size: 13px; white-space: pre-wrap; border-left: 4px solid #667eea; }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-title">Part 3 - 手繪設計與 AI 生成</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">首頁</a>
+            <a href="Part2_Reveal.js簡報框架.html" class="nav-btn">← 上一章</a>
+            <a href="Part4_資料收集與NotebookLM.html" class="nav-btn">下一章 →</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">全螢幕</button>
+            <span class="nav-btn" id="pageIndicator">1 / 18</span>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+        <!-- 封面 -->
+        <div class="slide active">
+            <div class="content-card cover-content">
+                <h1>Part 3：手繪設計與 AI 生成</h1>
+                <p class="cover-subtitle">設計簡報版面，讓 AI 幫你寫 HTML</p>
+                <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <span class="tag-badge">手繪設計</span>
+                    <span class="tag-badge">AI Prompt</span>
+                    <span class="tag-badge">HTML 生成</span>
+                    <span class="tag-badge">模板化</span>
+                </div>
+                <p class="cover-info">曾慶良(阿亮老師) | AI 協作簡報實戰工作坊<br>實作 4-6 | Time 4-6</p>
+            </div>
+        </div>
+
+        <!-- 實作 4：手繪設計 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 4</p>
+                <h2>實作 4：手繪你的簡報版面設計 <span class="part-badge">Part 1/5</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>學習目標</h3>
+                        <ul>
+                            <li>學會「手繪稿」的設計方法</li>
+                            <li>規劃簡報的版面配置</li>
+                            <li>為每個元素標註 class 名稱</li>
+                        </ul>
+                        <h3>為什麼要用手畫？</h3>
+                        <ul>
+                            <li>先想清楚結構，再動手做</li>
+                            <li>這是業界標準流程（Wireframe）</li>
+                            <li>給 AI 看的「設計稿」</li>
+                        </ul>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img23.png" alt="手繪設計稿範例" class="screenshot">
+                        <p class="screenshot-caption">亮師 23：手繪設計稿範例</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 頁面區塊設計 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 4</p>
+                <h2>設計你的頁面區塊 <span class="part-badge">Part 2/5</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>一般簡報頁面的區塊</h3>
+                        <pre>┌────────────────────────┐
+│                        │
+│      【標題區】         │
+│      【副標題區】       │
+│                        │
+├────────────────────────┤
+│                        │
+│      【內容區】         │
+│   (文字、圖片、列表)    │
+│                        │
+├────────────────────────┤
+│ 【頁碼】      【日期】  │
+└────────────────────────┘</pre>
+                    </div>
+                    <div>
+                        <h3>在草圖上標註說明</h3>
+                        <ul>
+                            <li>標題區：「大標題，置中，粗體」</li>
+                            <li>副標題區：「比標題小」</li>
+                            <li>內容區：「條列式重點，3-5 項」</li>
+                            <li>頁尾區：「左邊頁碼，右邊日期」</li>
+                        </ul>
+                        <div class="box warning">
+                            <strong>重點：</strong>你畫得越清楚，AI 就越能理解你想要什麼！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 不同類型的頁面 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 4</p>
+                <h2>設計不同類型的頁面 <span class="part-badge">Part 3/5</span></h2>
+                <div class="concept-grid" style="grid-template-columns: repeat(5, 1fr);">
+                    <div class="concept-card">
+                        <h3>封面頁</h3>
+                        <p>大標題 + 副標題</p>
+                        <p>可能有圖片</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>內容頁</h3>
+                        <p>標題 + 條列重點</p>
+                        <p>最常用的類型</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>圖片頁</h3>
+                        <p>大圖片 + 說明</p>
+                        <p>視覺衝擊</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>引言頁</h3>
+                        <p>一段金句</p>
+                        <p>引用名言</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>結尾頁</h3>
+                        <p>感謝、Q&amp;A</p>
+                        <p>聯絡資訊</p>
+                    </div>
+                </div>
+                <div class="box info" style="margin-top: 15px;">
+                    <strong>建議：</strong>至少畫出 2-3 種不同的頁面類型！
+                </div>
+            </div>
+        </div>
+
+        <!-- 把草圖轉成文字描述 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 4</p>
+                <h2>把草圖轉成文字描述 <span class="part-badge">Part 4/5</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>範例格式</h3>
+                        <pre>我的簡報頁面設計
+
+===== 封面頁 =====
+- 整頁置中對齊
+- 大標題：頁面中央，字體很大，粗體
+- 副標題：在大標題下方，字體較小
+- 講者資訊：頁面下方，小字
+
+===== 一般內容頁 =====
+- 標題區：頁面上方，左對齊
+- 內容區：條列式，3-5 個項目
+- 頁尾：左邊頁碼，右邊日期</pre>
+                    </div>
+                    <div>
+                        <h3>為什麼要寫成文字？</h3>
+                        <ul>
+                            <li>等一下要請 AI 幫忙把設計變成 HTML</li>
+                            <li>文字描述是給 AI 看的「規格書」</li>
+                            <li>描述越清楚，AI 生成的結果越好</li>
+                        </ul>
+                        <div class="box success">
+                            <strong>下一步：</strong>用 AI 把這個描述變成 HTML 程式碼！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 4 完成 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 4</p>
+                <h2>實作 4 完成確認 <span class="part-badge">Part 5/5</span></h2>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>手繪草圖</h3>
+                        <p>畫出 2-3 種不同的頁面類型</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>標註說明</h3>
+                        <p>每個區塊都有標註用途</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>轉成文字</h3>
+                        <p>把草圖轉成文字描述檔案</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>準備就緒</h3>
+                        <p>準備好給 AI 看的設計稿</p>
+                    </div>
+                </div>
+                <div class="box success" style="margin-top: 20px;">
+                    <strong>完成！</strong>你有了設計稿，接下來讓 AI 幫你變成 HTML！
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 5：AI 生成 HTML -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 5</p>
+                <h2>實作 5：用 AI 把設計稿變成 HTML <span class="part-badge">Part 1/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>學習目標</h3>
+                        <ul>
+                            <li>學會寫「讓 AI 寫程式碼」的 Prompt</li>
+                            <li>把手繪稿描述給 AI</li>
+                            <li>學會基本除錯流程</li>
+                            <li>掌握追問/修改技巧</li>
+                        </ul>
+                        <h3>AI Prompt 的三要素</h3>
+                        <ol>
+                            <li><strong>角色：</strong>告訴 AI 它要扮演什麼</li>
+                            <li><strong>任務：</strong>清楚說明要做什麼</li>
+                            <li><strong>規格：</strong>具體的技術要求</li>
+                        </ol>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img27.png" alt="AI 生成 HTML" class="screenshot">
+                        <p class="screenshot-caption">亮師 27：AI 生成的 HTML</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt 完整範例 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 5</p>
+                <h2>AI Prompt 完整範例 <span class="part-badge">Part 2/6</span></h2>
+                <div class="prompt-box">請幫我建立一個 HTML 簡報，使用 Reveal.js 框架。
+
+簡報版面設計：
+- 封面頁：標題置中，副標題在下方，講者資訊在最下方
+- 內容頁：標題在上，條列重點在下（3-5 個項目）
+- 結尾頁：感謝文字置中，聯絡資訊在下方
+
+技術要求：
+- 使用 Reveal.js CDN 版本
+- 每個元素都要有 class 名稱，方便之後調整樣式
+- 包含基本的 CSS 樣式（字體、顏色、間距）
+- 先給我 3 頁作為示範
+
+請給我完整可運行的 HTML 程式碼。</div>
+                <div class="box info">
+                    <strong>重點：</strong>說清楚「版面設計」和「技術要求」，AI 才能給你想要的結果！
+                </div>
+            </div>
+        </div>
+
+        <!-- AI 回覆與驗證 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 5</p>
+                <h2>驗證 AI 生成的結果 <span class="part-badge">Part 3/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>驗證步驟</h3>
+                        <p><span class="step-number">1</span>複製 AI 給的 HTML 程式碼</p>
+                        <p><span class="step-number">2</span>在 VS Code 按 <span class="keyboard-key">Ctrl</span>+<span class="keyboard-key">N</span> 新建檔案</p>
+                        <p><span class="step-number">3</span>按 <span class="keyboard-key">Ctrl</span>+<span class="keyboard-key">V</span> 貼上程式碼</p>
+                        <p><span class="step-number">4</span>按 <span class="keyboard-key">Ctrl</span>+<span class="keyboard-key">S</span> 儲存為 <code>my-slides.html</code></p>
+                        <p><span class="step-number">5</span>用瀏覽器打開，檢查結果</p>
+                        <div class="box warning">
+                            <strong>如果有問題：</strong>把錯誤訊息貼給 AI，請它幫忙修正
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img28.png" alt="AI 回覆" class="screenshot">
+                        <p class="screenshot-caption">亮師 28：AI 回覆的程式碼</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 追問技巧 1 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 5</p>
+                <h2>追問技巧 1：修改樣式 <span class="part-badge">Part 4/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>當樣式不滿意時...</h3>
+                        <div class="prompt-box">請幫我調整以下幾點：
+1. 標題字體加大 1.5 倍
+2. 背景顏色改成深藍色 (#1a1a2e)
+3. 文字顏色改成白色
+4. 增加段落之間的間距
+5. 按鈕加上圓角和 hover 效果</div>
+                    </div>
+                    <div>
+                        <h3>追問技巧要點</h3>
+                        <ul>
+                            <li><strong>具體描述：</strong>不要說「大一點」，要說「加大 1.5 倍」</li>
+                            <li><strong>提供色碼：</strong>給具體的顏色代碼更精確</li>
+                            <li><strong>一次多項：</strong>可以同時列出多個修改項目</li>
+                            <li><strong>說明原因：</strong>「因為在深色背景下看不清楚」</li>
+                        </ul>
+                        <div class="box info">
+                            <strong>小技巧：</strong>用編號列出修改項目，AI 比較不會漏掉！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 追問技巧 2 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 5</p>
+                <h2>追問技巧 2：增加頁面/修改結構 <span class="part-badge">Part 5/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>增加頁面</h3>
+                        <div class="prompt-box">請再幫我增加 3 頁內容頁，
+結構和之前的內容頁一樣。
+
+新增的頁面標題分別是：
+1. 「AI 工具的優勢」
+2. 「常見的 AI 工具介紹」
+3. 「如何開始使用」
+
+每頁都要有 3-5 個條列重點的空位。</div>
+                    </div>
+                    <div>
+                        <h3>修改結構</h3>
+                        <div class="prompt-box">封面頁的講者資訊我希望放在
+左下角而不是中間，請幫我調整。
+
+另外，請在每頁右下角加上頁碼，
+格式為「第 X 頁，共 Y 頁」。</div>
+                        <div class="box success">
+                            <strong>重點：</strong>描述你想要的「位置」和「格式」！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 基本除錯流程 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 5</p>
+                <h2>基本除錯流程 <span class="part-badge">Part 6/6</span></h2>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>問題 1：畫面空白</h3>
+                        <p>可能是 HTML 結構有誤</p>
+                        <p><strong>解法：</strong>請 AI 檢查語法，或按 F12 看錯誤訊息</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>問題 2：樣式跑掉</h3>
+                        <p>CSS 設定有問題</p>
+                        <p><strong>解法：</strong>描述問題給 AI，附上截圖更好</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>問題 3：功能不動</h3>
+                        <p>JavaScript 或 CDN 問題</p>
+                        <p><strong>解法：</strong>檢查網路連線、CDN 網址是否正確</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>問題 4：中文亂碼</h3>
+                        <p>編碼設定問題</p>
+                        <p><strong>解法：</strong>確認有 <code>&lt;meta charset="UTF-8"&gt;</code></p>
+                    </div>
+                </div>
+                <div class="box success" style="margin-top: 15px;">
+                    <strong>除錯心法：</strong>不要怕出錯！把錯誤描述清楚，AI 通常都能幫你修好。
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 6：模板化 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 6</p>
+                <h2>實作 6：把簡報變成可重複使用的模板 <span class="part-badge">Part 1/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>學習目標</h3>
+                        <ul>
+                            <li>理解「模板」的概念</li>
+                            <li>用標記標示可替換的內容</li>
+                            <li>建立自己的簡報模板庫</li>
+                        </ul>
+                        <h3>模板化原則</h3>
+                        <ul>
+                            <li>用 <code>【在此輸入】</code> 標記可替換內容</li>
+                            <li>CSS 樣式、HTML 結構保留</li>
+                            <li>存成 <code>template.html</code></li>
+                        </ul>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img31.png" alt="模板檔案" class="screenshot">
+                        <p class="screenshot-caption">亮師 31：模板檔案內容</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模板化範例 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 6</p>
+                <h2>模板化範例 <span class="part-badge">Part 2/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>原本的簡報</h3>
+                        <pre>&lt;section&gt;
+  &lt;h1&gt;AI 工具入門&lt;/h1&gt;
+  &lt;p&gt;讓你的工作更有效率&lt;/p&gt;
+&lt;/section&gt;
+
+&lt;section&gt;
+  &lt;h2&gt;為什麼要學 AI？&lt;/h2&gt;
+  &lt;ul&gt;
+    &lt;li&gt;節省時間&lt;/li&gt;
+    &lt;li&gt;提升品質&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/section&gt;</pre>
+                    </div>
+                    <div>
+                        <h3>模板化後</h3>
+                        <pre>&lt;!-- ====== 封面頁模板 ====== --&gt;
+&lt;section&gt;
+  &lt;h1&gt;【簡報標題】&lt;/h1&gt;
+  &lt;p&gt;【副標題】&lt;/p&gt;
+&lt;/section&gt;
+
+&lt;!-- ====== 內容頁模板 ====== --&gt;
+&lt;section&gt;
+  &lt;h2&gt;【章節標題】&lt;/h2&gt;
+  &lt;ul&gt;
+    &lt;li&gt;【重點 1】&lt;/li&gt;
+    &lt;li&gt;【重點 2】&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/section&gt;</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模板化步驟 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 6</p>
+                <h2>模板化詳細步驟 <span class="part-badge">Part 3/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>步驟說明</h3>
+                        <p><span class="step-number">1</span>用 VS Code 打開你的簡報檔案</p>
+                        <p><span class="step-number">2</span>按 <span class="keyboard-key">Ctrl</span>+<span class="keyboard-key">F</span> 搜尋 <code>section</code></p>
+                        <p><span class="step-number">3</span>把每頁的「範例文字」換成【預設文字】</p>
+                        <p><span class="step-number">4</span>在每個 section 前加上註解說明</p>
+                        <p><span class="step-number">5</span>按 <span class="keyboard-key">Ctrl</span>+<span class="keyboard-key">Shift</span>+<span class="keyboard-key">S</span> 另存為 <code>template.html</code></p>
+                    </div>
+                    <div>
+                        <h3>註解格式</h3>
+                        <pre>&lt;!-- ====== 封面頁 ====== --&gt;
+&lt;!-- ====== 內容頁 ====== --&gt;
+&lt;!-- ====== 圖片頁 ====== --&gt;
+&lt;!-- ====== 結尾頁 ====== --&gt;</pre>
+                        <div class="box info">
+                            <strong>註解語法：</strong><code>&lt;!-- 文字 --&gt;</code><br>
+                            瀏覽器不會顯示，但你可以在程式碼中看到
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time 1-6 完成 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 6</p>
+                <h2>Time 1-6 完成！模板建立成功 <span class="part-badge">Part 4/4</span></h2>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>實作 1</h3>
+                        <p>認識 HTML 基礎</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>實作 2</h3>
+                        <p>Tab UI 與 VS Code</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>實作 3</h3>
+                        <p>Reveal.js 簡報操作</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>實作 4</h3>
+                        <p>手繪設計稿</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>實作 5</h3>
+                        <p>AI 生成 HTML</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>實作 6</h3>
+                        <p>模板化簡報</p>
+                    </div>
+                </div>
+                <div class="box success" style="margin-top: 15px;">
+                    <strong>恭喜！</strong>你已經有了自己的 HTML 簡報模板！接下來要用 AI 生成內容！
+                </div>
+            </div>
+        </div>
+
+        <!-- 本章完成 -->
+        <div class="slide">
+            <div class="content-card cover-content">
+                <h1>Part 3 完成！</h1>
+                <p class="cover-subtitle">你已經學會設計和生成 HTML 簡報了</p>
+                <div class="concept-grid" style="margin-top: 30px;">
+                    <div class="concept-card">
+                        <h3>手繪設計</h3>
+                        <p>Wireframe 概念</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>AI Prompt</h3>
+                        <p>三要素：角色、任務、規格</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>模板化</h3>
+                        <p>【】標記可替換內容</p>
+                    </div>
+                </div>
+                <p class="cover-info" style="margin-top: 30px;">
+                    <a href="Part4_資料收集與NotebookLM.html" style="color: #667eea; font-weight: bold; text-decoration: none;">
+                        下一章：Part 4 - 資料收集與 NotebookLM →
+                    </a>
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); if (e.key === 'Home') goToSlide(0); if (e.key === 'End') goToSlide(totalSlides - 1); }
+        function createIndicators() { const container = document.getElementById('indicatorContainer'); container.innerHTML = ''; slides.forEach((_, index) => { const dot = document.createElement('div'); dot.className = 'dot'; dot.onclick = () => goToSlide(index); container.appendChild(dot); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(slide => slide.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; const dots = document.querySelectorAll('.dot'); dots.forEach((dot, idx) => dot.classList.toggle('active', idx === index)); updateButtons(); document.getElementById('pageIndicator').textContent = `${index + 1} / ${totalSlides}`; }
+        function changeSlide(direction) { showSlide(currentSlide + direction); }
+        function goToSlide(index) { showSlide(index); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } else if (document.exitFullscreen) { document.exitFullscreen(); } }
+        init();
+    </script>
+</body>
+</html>

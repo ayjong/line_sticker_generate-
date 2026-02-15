@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 1 - HTML 簡報基礎與模板建立</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .back-nav {
+            margin-bottom: 30px;
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateX(-5px);
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+            animation: fadeInDown 1s ease;
+        }
+        .header .day-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.25);
+            padding: 8px 25px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 15px;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            font-weight: 800;
+        }
+        .header p {
+            font-size: 22px;
+            opacity: 0.95;
+        }
+
+        .main-section {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            padding: 45px;
+            margin-bottom: 40px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+            animation: fadeInUp 1s ease;
+        }
+
+        .section-description {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+            padding: 25px 30px;
+            border-radius: 15px;
+            margin-bottom: 35px;
+            border-left: 5px solid #667eea;
+            font-size: 17px;
+            line-height: 1.8;
+            color: #444;
+        }
+
+        .parts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .part-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .part-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .part-card:hover::before { opacity: 1; }
+        .part-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        .part-icon { font-size: 40px; margin-bottom: 15px; display: block; }
+        .part-number {
+            font-size: 14px;
+            opacity: 0.85;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .part-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .part-desc {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-3px);
+        }
+        .nav-link.next {
+            background: white;
+            color: #667eea;
+        }
+        .nav-link.next:hover {
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 32px; }
+            .parts-grid { grid-template-columns: 1fr; }
+            .main-section { padding: 30px 25px; }
+            .footer-nav { flex-direction: column; gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-nav">
+            <a href="index.html" class="back-btn">← 返回課程首頁</a>
+        </div>
+
+        <div class="header">
+            <div class="day-badge">DAY 1</div>
+            <h1>HTML 簡報基礎與模板建立</h1>
+            <p>實作 1-12 | 認識 HTML、建立模板、AI 協作內容生成</p>
+        </div>
+
+        <div class="main-section">
+            <div class="section-description">
+                Day 1 將帶你從零開始認識 HTML，學會用 Reveal.js 製作簡報，並透過手繪設計讓 AI 幫你生成 HTML 程式碼。下半天學習使用 NotebookLM 整理資料，設計可重複使用的 Prompt 組，最後建立你的 AI 協作 Skill。
+            </div>
+
+            <div class="parts-grid">
+                <a href="Part1_HTML基礎入門.html" class="part-card">
+                    <span class="part-icon">🏷️</span>
+                    <div class="part-number">PART 1</div>
+                    <div class="part-title">HTML 基礎入門</div>
+                    <div class="part-desc">實作 1-2 | 認識標籤、VS Code 操作</div>
+                </a>
+
+                <a href="Part2_Reveal.js簡報框架.html" class="part-card">
+                    <span class="part-icon">🎬</span>
+                    <div class="part-number">PART 2</div>
+                    <div class="part-title">Reveal.js 簡報框架</div>
+                    <div class="part-desc">實作 3 | 快捷鍵、總覽模式、講者備註</div>
+                </a>
+
+                <a href="Part3_手繪設計與AI生成.html" class="part-card">
+                    <span class="part-icon">✏️</span>
+                    <div class="part-number">PART 3</div>
+                    <div class="part-title">手繪設計與 AI 生成</div>
+                    <div class="part-desc">實作 4-6 | Wireframe、Prompt 三要素、模板化</div>
+                </a>
+
+                <a href="Part4_資料收集與NotebookLM.html" class="part-card">
+                    <span class="part-icon">📊</span>
+                    <div class="part-number">PART 4</div>
+                    <div class="part-title">資料收集與 NotebookLM</div>
+                    <div class="part-desc">實作 7-9 | 資料整理、來源標註、內容大綱</div>
+                </a>
+
+                <a href="Part5_Prompt設計與內容生成.html" class="part-card">
+                    <span class="part-icon">💬</span>
+                    <div class="part-number">PART 5</div>
+                    <div class="part-title">Prompt 設計與內容生成</div>
+                    <div class="part-desc">實作 10-12 | 5 個 Prompt 組、AI 生成內容</div>
+                </a>
+
+                <a href="Part6_進階技巧與Skill建立.html" class="part-card">
+                    <span class="part-icon">⚡</span>
+                    <div class="part-number">PART 6</div>
+                    <div class="part-title">進階技巧與 Skill 建立</div>
+                    <div class="part-desc">進階 | SKILL.md、資料夾結構、雙平台支援</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="footer-nav">
+            <a href="index.html" class="nav-link">← 返回首頁</a>
+            <a href="Day2.html" class="nav-link next">前往 Day 2 →</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Part 4 - 資料收集與 NotebookLM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.2); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 20px; font-weight: 700; color: #fff; }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: white; padding: 6px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.4); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 24px; cursor: pointer; z-index: 9000; display: flex; align-items: center; justify-content: center; }
+        .prev-arrow { left: 30px; } .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 40px; opacity: 0; transition: opacity 0.4s ease; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255, 255, 255, 0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); padding: 35px 45px; max-width: 1400px; width: 95%; max-height: 88vh; overflow-y: auto; }
+        h1 { color: #667eea; font-size: 40px; margin-bottom: 18px; text-align: center; font-weight: 800; }
+        h2 { color: #764ba2; font-size: 28px; margin-bottom: 18px; border-bottom: 3px solid #667eea; padding-bottom: 10px; }
+        h3 { color: #667eea; font-size: 20px; margin: 18px 0 10px 0; }
+        p, li { font-size: 16px; line-height: 1.7; color: #444; margin-bottom: 8px; }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-family: 'Consolas', monospace; color: #d63384; }
+        pre { background: #282c34; color: #abb2bf; padding: 15px; border-radius: 10px; margin: 12px 0; font-size: 13px; font-family: 'Consolas', monospace; }
+        .box { padding: 12px 18px; border-radius: 10px; margin: 12px 0; border-left: 4px solid; }
+        .info { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 15px; }
+        .concept-card { background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%); padding: 15px; border-radius: 12px; border: 2px solid #e8ecff; }
+        .tag-badge { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 15px; font-size: 13px; margin: 2px; }
+        .time-badge { display: inline-block; background: #667eea; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; margin-bottom: 10px; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; font-weight: 700; font-size: 13px; margin-right: 8px; }
+        .screenshot { max-width: 100%; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); margin: 12px 0; border: 2px solid #e0e0e0; }
+        .screenshot-container { text-align: center; margin: 12px 0; }
+        .screenshot-caption { font-size: 13px; color: #666; margin-top: 8px; font-style: italic; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .two-column { grid-template-columns: 1fr; } }
+        .indicators { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 4000; padding: 8px 15px; background: rgba(0,0,0,0.3); border-radius: 25px; }
+        .dot { width: 8px; height: 8px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; }
+        .dot.active { background: #fff; transform: scale(1.4); }
+        .cover-content { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 50vh; }
+        .cover-content h1 { font-size: 44px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .cover-subtitle { font-size: 22px; color: #764ba2; margin-bottom: 20px; }
+        .cover-info { font-size: 15px; color: #888; margin-top: 25px; }
+        .section-divider { text-align: center; padding: 25px; }
+        .section-divider h1 { font-size: 42px; }
+        .section-divider p { font-size: 18px; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+        th, td { border: 1px solid #e0e0e0; padding: 10px 12px; text-align: left; }
+        th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        tr:nth-child(even) { background: #f8f9ff; }
+        .part-badge { display: inline-block; background: #28a745; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; margin-left: 10px; }
+        .prompt-box { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 10px; margin: 10px 0; font-family: 'Consolas', monospace; font-size: 13px; white-space: pre-wrap; border-left: 4px solid #667eea; }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-title">Part 4 - 資料收集與 NotebookLM</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">首頁</a>
+            <a href="Part3_手繪設計與AI生成.html" class="nav-btn">← 上一章</a>
+            <a href="Part5_Prompt設計與內容生成.html" class="nav-btn">下一章 →</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">全螢幕</button>
+            <span class="nav-btn" id="pageIndicator">1 / 16</span>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+        <!-- 封面 -->
+        <div class="slide active">
+            <div class="content-card cover-content">
+                <h1>Part 4：資料收集與 NotebookLM</h1>
+                <p class="cover-subtitle">用 AI 整理你的簡報素材</p>
+                <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <span class="tag-badge">資料收集</span>
+                    <span class="tag-badge">NotebookLM</span>
+                    <span class="tag-badge">來源標註</span>
+                    <span class="tag-badge">內容整理</span>
+                </div>
+                <p class="cover-info">曾慶良(阿亮老師) | AI 協作簡報實戰工作坊<br>實作 7-9 | Time 7-9</p>
+            </div>
+        </div>
+
+        <!-- 主題分隔頁 -->
+        <div class="slide">
+            <div class="content-card section-divider">
+                <h1>AI 協作與內容生成</h1>
+                <p>Time 7 - Time 12 | 實作 7-12</p>
+            </div>
+        </div>
+
+        <!-- 實作 7 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 7</p>
+                <h2>實作 7：決定簡報主題，收集資料來源 <span class="part-badge">Part 1/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>學習目標</h3>
+                        <ul>
+                            <li>確定你的簡報主題</li>
+                            <li>收集相關資料來源</li>
+                            <li>準備餵給 NotebookLM 的素材</li>
+                        </ul>
+                        <h3>好主題的特點</h3>
+                        <ul>
+                            <li>你有興趣或熟悉的領域</li>
+                            <li>有足夠的資料可參考</li>
+                            <li>可以在 5-10 頁內講完</li>
+                        </ul>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img33.png" alt="收集資料" class="screenshot">
+                        <p class="screenshot-caption">亮師 33：收集資料來源</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主題建議 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 7</p>
+                <h2>主題建議與範例 <span class="part-badge">Part 2/4</span></h2>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>自我介紹簡報</h3>
+                        <p>介紹你自己、背景、專長、興趣</p>
+                        <p><strong>難度：</strong>最簡單</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>熟悉的主題</h3>
+                        <p>咖啡入門、多肉植物、旅遊攻略</p>
+                        <p><strong>難度：</strong>中等</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>工作相關</h3>
+                        <p>公司介紹、產品說明、專案報告</p>
+                        <p><strong>難度：</strong>依主題而定</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>學習心得</h3>
+                        <p>AI 學習心得、讀書筆記分享</p>
+                        <p><strong>難度：</strong>中等</p>
+                    </div>
+                </div>
+                <div class="box info">
+                    <strong>建議：</strong>選一個你至少有一點了解的主題，這堂課的重點是學習「流程」！
+                </div>
+            </div>
+        </div>
+
+        <!-- 資料來源類型 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 7</p>
+                <h2>資料來源可以是什麼？ <span class="part-badge">Part 3/4</span></h2>
+                <div class="concept-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="concept-card">
+                        <h3>PDF 檔案</h3>
+                        <p>報告、論文、說明書</p>
+                        <p>電子書、手冊</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>網頁文章</h3>
+                        <p>新聞、部落格</p>
+                        <p>教學文章</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>個人筆記</h3>
+                        <p>自己整理的資料</p>
+                        <p>會議記錄</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>影片</h3>
+                        <p>YouTube 影片</p>
+                        <p>線上課程</p>
+                    </div>
+                </div>
+                <div class="box info" style="margin-top: 15px;">
+                    <strong>建議：</strong>準備 2-5 個資料來源，不要太多也不要太少
+                </div>
+            </div>
+        </div>
+
+        <!-- 資料來源清單 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 7</p>
+                <h2>建立資料來源清單 <span class="part-badge">Part 4/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>清單格式範例</h3>
+                        <pre># 我的簡報資料來源清單
+
+## 主題：AI 工具入門指南
+
+### 來源 1：OpenAI 官方網站
+- 類型：官方網站
+- 網址：https://openai.com/
+- 用途：ChatGPT 基本介紹
+
+### 來源 2：我的使用經驗
+- 類型：個人經驗
+- 說明：自己用 AI 的心得
+
+### 來源 3：YouTube 教學影片
+- 類型：影片
+- 網址：https://youtube.com/...</pre>
+                    </div>
+                    <div>
+                        <h3>完成確認</h3>
+                        <ul>
+                            <li>決定了簡報主題</li>
+                            <li>列出了 2-5 個資料來源</li>
+                            <li>確認網頁連結都能正常開啟</li>
+                            <li>存成 <code>資料來源清單.md</code></li>
+                        </ul>
+                        <div class="box success">
+                            <strong>下一步：</strong>把這些資料匯入 NotebookLM！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 8：NotebookLM -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 8</p>
+                <h2>實作 8：建立 NotebookLM 專案 <span class="part-badge">Part 1/5</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>什麼是 NotebookLM？</h3>
+                        <p>Google 推出的 AI 筆記工具</p>
+                        <div class="box success">
+                            <strong>NotebookLM 的優點：</strong><br>
+                            - 上傳 PDF、網頁、文字<br>
+                            - AI 自動分析，回答問題<br>
+                            - 回答有來源標註，不會亂編<br>
+                            - 完全免費！
+                        </div>
+                        <p><strong>網址：</strong><code>notebooklm.google.com</code></p>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img35.png" alt="NotebookLM" class="screenshot">
+                        <p class="screenshot-caption">亮師 35：NotebookLM 首頁</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NotebookLM 操作步驟 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 8</p>
+                <h2>NotebookLM 操作步驟 <span class="part-badge">Part 2/5</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>建立專案</h3>
+                        <p><span class="step-number">1</span>前往 <code>notebooklm.google.com</code></p>
+                        <p><span class="step-number">2</span>用 Google 帳號登入</p>
+                        <p><span class="step-number">3</span>點擊「新增筆記本」</p>
+                        <p><span class="step-number">4</span>為專案取一個名稱</p>
+                        <div class="box info">
+                            <strong>建議名稱：</strong>「AI 工具入門 - 簡報素材」
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img36.png" alt="新增筆記本" class="screenshot">
+                        <p class="screenshot-caption">亮師 36：新增筆記本</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 匯入資料 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 8</p>
+                <h2>匯入資料到 NotebookLM <span class="part-badge">Part 3/5</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>支援的資料類型</h3>
+                        <table>
+                            <tr><th>類型</th><th>操作方式</th></tr>
+                            <tr><td>Google Drive</td><td>直接選取雲端檔案</td></tr>
+                            <tr><td>PDF 上傳</td><td>從電腦上傳 PDF</td></tr>
+                            <tr><td>網站連結</td><td>貼上網頁網址</td></tr>
+                            <tr><td>YouTube</td><td>貼上影片網址（讀取字幕）</td></tr>
+                            <tr><td>貼上文字</td><td>直接貼上你的筆記</td></tr>
+                        </table>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img37.png" alt="選擇類型" class="screenshot">
+                        <p class="screenshot-caption">亮師 37：選擇資料類型</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 素色背景提示詞 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 8</p>
+                <h2>NotebookLM 進階：素色背景提示詞技巧 <span class="part-badge">Part 4/5</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>為什麼要用素色背景？</h3>
+                        <table>
+                            <tr><th>特性</th><th>素色背景</th><th>漸層背景</th></tr>
+                            <tr><td>文字修改</td><td>容易</td><td>困難</td></tr>
+                            <tr><td>OCR 辨識</td><td>準確</td><td>可能出錯</td></tr>
+                            <tr><td>後製編輯</td><td>簡單</td><td>複雜</td></tr>
+                        </table>
+                    </div>
+                    <div>
+                        <h3>素色簡報生成提示詞</h3>
+                        <div class="prompt-box" style="font-size: 12px;">請為我生成一份關於 [主題] 的簡報。
+在視覺設計上，請採用「扁平化極簡風格」。
+所有文字後方的裝飾色塊請使用
+「單一不透明素色」，
+嚴禁使用漸層色、半透明效果或複雜底紋。</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NotebookLM 匯入完成 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 8</p>
+                <h2>匯入完成確認 <span class="part-badge">Part 5/5</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>確認清單</h3>
+                        <ul>
+                            <li>建立了 NotebookLM 專案</li>
+                            <li>匯入了 2-5 個資料來源</li>
+                            <li>每個來源都顯示「已處理」</li>
+                            <li>可以點擊來源查看內容摘要</li>
+                        </ul>
+                        <div class="box success">
+                            <strong>下一步：</strong>開始向 NotebookLM 提問，整理內容重點！
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img38.png" alt="匯入完成" class="screenshot">
+                        <p class="screenshot-caption">亮師 38：資料匯入完成</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 9：整理重點 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 9</p>
+                <h2>實作 9：用 NotebookLM 整理內容重點 <span class="part-badge">Part 1/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>學習目標</h3>
+                        <ul>
+                            <li>學會向 NotebookLM 提問</li>
+                            <li>從資料中提取簡報重點</li>
+                            <li>規劃簡報的章節架構</li>
+                        </ul>
+                        <h3>提問技巧</h3>
+                        <p>問得越具體，回答越有用！</p>
+                        <p>告訴 AI 你的「用途」（做簡報）</p>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img40.png" alt="提問示範" class="screenshot">
+                        <p class="screenshot-caption">亮師 40：向 NotebookLM 提問</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 實用提問範例 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 9</p>
+                <h2>實用提問範例 <span class="part-badge">Part 2/4</span></h2>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>整理重點</h3>
+                        <p>「請整理這些資料的 5 個核心重點」</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>規劃架構</h3>
+                        <p>「如果要做簡報，建議分成哪幾章？」</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>章節內容</h3>
+                        <p>「每個章節的重點是什麼？」</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>找亮點</h3>
+                        <p>「有什麼驚人的數據或案例？」</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>比較分析</h3>
+                        <p>「這個方法和傳統方法有什麼不同？」</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>實用建議</h3>
+                        <p>「初學者應該從哪裡開始？」</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 來源標註功能 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 9</p>
+                <h2>NotebookLM 回覆的特色 <span class="part-badge">Part 3/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>來源標註功能</h3>
+                        <p>NotebookLM 的回答會附上來源標記 [1]、[2]...</p>
+                        <ul>
+                            <li>點擊標記可查看原文</li>
+                            <li>確保 AI 沒有亂編</li>
+                            <li>方便你引用原始資料</li>
+                        </ul>
+                        <div class="box success">
+                            <strong>小技巧：</strong>點擊來源標記可以查看原文！確保 AI 沒有亂編。
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img42.png" alt="來源標註" class="screenshot">
+                        <p class="screenshot-caption">亮師 42：回答有來源標註</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 整理成文件 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 9</p>
+                <h2>把整理結果存成文件 <span class="part-badge">Part 4/4</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>建議格式</h3>
+                        <pre>簡報主題：【主題名稱】
+
+===== 第一章：【章節名稱】=====
+重點 1：...
+重點 2：...
+重點 3：...
+
+===== 第二章：【章節名稱】=====
+重點 1：...
+重點 2：...
+
+===== 亮點數據 =====
+- 數據 1：...
+- 案例 1：...</pre>
+                    </div>
+                    <div>
+                        <h3>存檔建議</h3>
+                        <ul>
+                            <li>存成 <code>.txt</code> 或 <code>.md</code> 檔案</li>
+                            <li>檔名：<code>簡報內容大綱.txt</code></li>
+                            <li>放在簡報專案資料夾中</li>
+                        </ul>
+                        <div class="box success">
+                            <strong>這份文件就是：</strong>等一下 AI 生成簡報內容的「原料」！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 本章完成 -->
+        <div class="slide">
+            <div class="content-card cover-content">
+                <h1>Part 4 完成！</h1>
+                <p class="cover-subtitle">你已經學會用 NotebookLM 整理資料了</p>
+                <div class="concept-grid" style="margin-top: 30px;">
+                    <div class="concept-card">
+                        <h3>資料收集</h3>
+                        <p>2-5 個來源</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>NotebookLM</h3>
+                        <p>AI 筆記工具</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>來源標註</h3>
+                        <p>不會亂編</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>內容大綱</h3>
+                        <p>簡報原料</p>
+                    </div>
+                </div>
+                <p class="cover-info" style="margin-top: 30px;">
+                    <a href="Part5_Prompt設計與內容生成.html" style="color: #667eea; font-weight: bold; text-decoration: none;">
+                        下一章：Part 5 - Prompt 設計與內容生成 →
+                    </a>
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const container = document.getElementById('indicatorContainer'); slides.forEach((_, i) => { const dot = document.createElement('div'); dot.className = 'dot'; dot.onclick = () => goToSlide(i); container.appendChild(dot); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); document.getElementById('pageIndicator').textContent = `${index + 1} / ${totalSlides}`; }
+        function changeSlide(d) { showSlide(currentSlide + d); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

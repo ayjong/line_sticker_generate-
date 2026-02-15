@@ -1,0 +1,25 @@
+# Claude Code 設定
+.claude/
+
+# 參考資料（不上架）
+參考/
+
+# 系統檔案
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 編輯器設定
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 暫存檔案
+*.tmp
+*.temp
+*.log
+
+# 其他不上架的檔案
+# 依專案需求添加

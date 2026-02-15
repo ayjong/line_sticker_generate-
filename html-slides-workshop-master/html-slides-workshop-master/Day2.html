@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 2 - 完善簡報與 GitHub 上線</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .back-nav { margin-bottom: 30px; }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateX(-5px);
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+            animation: fadeInDown 1s ease;
+        }
+        .header .day-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.25);
+            padding: 8px 25px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 15px;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            font-weight: 800;
+        }
+        .header p {
+            font-size: 22px;
+            opacity: 0.95;
+        }
+
+        .main-section {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            padding: 45px;
+            margin-bottom: 40px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+            animation: fadeInUp 1s ease;
+        }
+
+        .section-description {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+            padding: 25px 30px;
+            border-radius: 15px;
+            margin-bottom: 35px;
+            border-left: 5px solid #667eea;
+            font-size: 17px;
+            line-height: 1.8;
+            color: #444;
+        }
+
+        .parts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .part-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .part-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .part-card:hover::before { opacity: 1; }
+        .part-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        .part-icon { font-size: 40px; margin-bottom: 15px; display: block; }
+        .part-number {
+            font-size: 14px;
+            opacity: 0.85;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .part-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .part-desc {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .coming-soon {
+            text-align: center;
+            padding: 60px 40px;
+            color: #666;
+        }
+        .coming-soon .icon { font-size: 80px; margin-bottom: 25px; }
+        .coming-soon h3 { font-size: 28px; color: #667eea; margin-bottom: 15px; }
+        .coming-soon p { font-size: 17px; line-height: 1.8; }
+
+        .footer-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-3px);
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 32px; }
+            .parts-grid { grid-template-columns: 1fr; }
+            .main-section { padding: 30px 25px; }
+            .footer-nav { flex-direction: column; gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-nav">
+            <a href="index.html" class="back-btn">← 返回課程首頁</a>
+        </div>
+
+        <div class="header">
+            <div class="day-badge">DAY 2</div>
+            <h1>完善簡報與 GitHub 上線</h1>
+            <p>實作 13-24 | 內容完善、視覺優化、部署上線</p>
+        </div>
+
+        <div class="main-section">
+            <div class="section-description">
+                Day 2 將帶你完善簡報的內容與視覺設計，學習進階的 CSS 技巧，並將成品部署到 GitHub Pages，讓全世界都能看到你的作品！
+            </div>
+
+            <div class="coming-soon">
+                <div class="icon">🚧</div>
+                <h3>課程內容準備中</h3>
+                <p>
+                    Day 2 的詳細內容即將上線！<br>
+                    敬請期待更多精彩的實作練習
+                </p>
+            </div>
+
+            <!-- 未來可以加入更多 Part
+            <div class="parts-grid">
+                <a href="#" class="part-card">
+                    <span class="part-icon">🎨</span>
+                    <div class="part-number">PART 7</div>
+                    <div class="part-title">CSS 進階美化</div>
+                    <div class="part-desc">實作 13-15 | 動畫效果、響應式設計</div>
+                </a>
+            </div>
+            -->
+        </div>
+
+        <div class="footer-nav">
+            <a href="Day1.html" class="nav-link">← 返回 Day 1</a>
+            <a href="index.html" class="nav-link">返回首頁</a>
+        </div>
+    </div>
+</body>
+</html>

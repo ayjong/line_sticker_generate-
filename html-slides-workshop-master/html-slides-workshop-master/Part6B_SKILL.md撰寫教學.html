@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Part 6B - SKILL.md 撰寫教學</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; overflow: hidden; color: #333; }
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 10000; }
+        .nav-title { font-size: 18px; font-weight: 700; color: #fff; }
+        .nav-buttons { display: flex; gap: 10px; }
+        .nav-btn { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: white; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 600; text-decoration: none; }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.4); }
+        .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.25); color: white; width: 55px; height: 55px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); font-size: 22px; cursor: pointer; z-index: 9000; display: flex; align-items: center; justify-content: center; }
+        .prev-arrow { left: 25px; } .next-arrow { right: 25px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100vh - 60px); display: none; align-items: center; justify-content: center; padding: 30px 80px; opacity: 0; transition: opacity 0.4s ease; }
+        .slide.active { display: flex; opacity: 1; z-index: 20; }
+        .content-card { background: rgba(255, 255, 255, 0.98); border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); padding: 35px 45px; max-width: 1300px; width: 100%; max-height: 85vh; overflow-y: auto; }
+        h1 { color: #667eea; font-size: 42px; margin-bottom: 20px; text-align: center; }
+        h2 { color: #764ba2; font-size: 28px; margin-bottom: 20px; border-bottom: 3px solid #667eea; padding-bottom: 10px; }
+        h3 { color: #667eea; font-size: 20px; margin: 18px 0 12px 0; }
+        p, li { font-size: 17px; line-height: 1.8; color: #444; margin-bottom: 10px; }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        code { background: #f0f2f5; padding: 3px 8px; border-radius: 5px; font-family: 'Consolas', monospace; color: #d63384; font-size: 15px; }
+        pre { background: #282c34; color: #abb2bf; padding: 18px; border-radius: 12px; margin: 15px 0; font-size: 14px; font-family: 'Consolas', monospace; overflow-x: auto; }
+        .box { padding: 15px 20px; border-radius: 12px; margin: 15px 0; border-left: 5px solid; }
+        .info { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .danger { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .three-column { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .two-column, .three-column { grid-template-columns: 1fr; } .slide { padding: 20px; } }
+        .indicators { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 4000; padding: 10px 18px; background: rgba(0,0,0,0.35); border-radius: 25px; }
+        .dot { width: 10px; height: 10px; background: rgba(255,255,255,0.4); border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #fff; transform: scale(1.3); }
+        .cover-content { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 55vh; }
+        .cover-content h1 { font-size: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .cover-subtitle { font-size: 24px; color: #764ba2; margin-bottom: 25px; }
+        .cover-info { font-size: 16px; color: #888; margin-top: 30px; }
+        .tag-badge { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 16px; border-radius: 20px; font-size: 14px; margin: 3px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 16px; }
+        th, td { border: 1px solid #e0e0e0; padding: 12px 15px; text-align: left; }
+        th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        tr:nth-child(even) { background: #f8f9ff; }
+        .highlight { background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); padding: 20px; border-radius: 15px; margin: 15px 0; }
+        .emoji-icon { font-size: 36px; margin-bottom: 12px; display: block; }
+        .concept-card { background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%); padding: 20px; border-radius: 15px; border: 2px solid #e8ecff; text-align: center; }
+        .nav-buttons-bottom { display: flex; justify-content: center; gap: 15px; margin-top: 30px; flex-wrap: wrap; }
+        .nav-btn-large { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 35px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
+        .nav-btn-large:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5); }
+        .nav-btn-outline { background: transparent; border: 2px solid #667eea; color: #667eea; padding: 13px 33px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 16px; transition: all 0.3s ease; }
+        .nav-btn-outline:hover { background: #667eea; color: white; }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-title">Part 6B - SKILL.md 撰寫教學</div>
+        <div class="nav-buttons">
+            <a href="Part6_進階技巧與Skill建立.html" class="nav-btn">📚 學習地圖</a>
+            <a href="index.html" class="nav-btn">🏠 首頁</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">全螢幕</button>
+            <span class="nav-btn" id="pageIndicator">1 / 10</span>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+        <!-- 封面 -->
+        <div class="slide active">
+            <div class="content-card cover-content">
+                <h1>Part 6B：SKILL.md 撰寫教學</h1>
+                <p class="cover-subtitle">三大組成部分：Frontmatter、Description、Instructions</p>
+                <div style="margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <span class="tag-badge">YAML 格式</span>
+                    <span class="tag-badge">觸發關鍵字</span>
+                    <span class="tag-badge">步驟撰寫</span>
+                    <span class="tag-badge">指令詞</span>
+                </div>
+                <p class="cover-info">曾慶良(阿亮老師) | AI 協作簡報實戰工作坊</p>
+            </div>
+        </div>
+
+        <!-- SKILL.md 三大部分 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📝 SKILL.md 的三大部分</h2>
+                <div class="three-column">
+                    <div class="concept-card">
+                        <span class="emoji-icon">🪪</span>
+                        <h3>1. Frontmatter</h3>
+                        <p>技能的「身分證」</p>
+                        <p style="font-size: 14px; color: #666;">YAML 格式<br>定義 name 和 description</p>
+                    </div>
+                    <div class="concept-card">
+                        <span class="emoji-icon">📋</span>
+                        <h3>2. Description</h3>
+                        <p>給人類閱讀的簡介</p>
+                        <p style="font-size: 14px; color: #666;">說明這個 Skill<br>能做什麼事情</p>
+                    </div>
+                    <div class="concept-card">
+                        <span class="emoji-icon">📜</span>
+                        <h3>3. Instructions</h3>
+                        <p>給 AI 執行的步驟</p>
+                        <p style="font-size: 14px; color: #666;">詳細的操作指令<br>與執行流程</p>
+                    </div>
+                </div>
+                <pre style="margin-top: 25px; font-size: 15px;">---
+name: my-skill-name              ← Frontmatter 開始
+description: "觸發關鍵字..."      ← description 決定何時觸發
+---                              ← Frontmatter 結束
+
+# My Skill                       ← 標題（給人看的）
+
+這個 Skill 的功能說明...          ← Description 區
+
+## Instructions                  ← Instructions 區開始
+
+### Step 1: 詢問使用者
+1. Ask user for project name
+2. Ask user for description
+...</pre>
+            </div>
+        </div>
+
+        <!-- Frontmatter 詳解 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🪪 Frontmatter 詳解（YAML 格式）</h2>
+                <div class="two-column">
+                    <div>
+                        <h3>📄 基本格式</h3>
+                        <pre style="font-size: 15px;">---
+name: project-initializer
+description: "Initialize new projects.
+Triggers: init project, 初始化專案,
+create project, setup project."
+---</pre>
+                        <h3 style="margin-top: 25px;">📌 兩個必要欄位</h3>
+                        <table style="font-size: 15px;">
+                            <tr><th>欄位</th><th>說明</th></tr>
+                            <tr><td><code>name</code></td><td>技能的唯一識別名稱<br>（英文小寫 + 短橫線）</td></tr>
+                            <tr><td><code>description</code></td><td>觸發關鍵字描述<br>（<strong>決定 AI 何時觸發！</strong>）</td></tr>
+                        </table>
+                    </div>
+                    <div>
+                        <h3>⚠️ 常見錯誤</h3>
+                        <div class="box danger">
+                            <strong>錯誤 1：冒號後沒空格</strong>
+                            <pre style="background: #333; margin: 8px 0; font-size: 14px;">name:my-skill  ❌ 錯誤
+name: my-skill ✅ 正確</pre>
+                        </div>
+                        <div class="box danger">
+                            <strong>錯誤 2：減號數量錯誤</strong>
+                            <pre style="background: #333; margin: 8px 0; font-size: 14px;">--    ❌ 只有兩個
+---   ✅ 三個減號（正確）
+----  ❌ 四個減號</pre>
+                        </div>
+                        <div class="box info" style="margin-top: 15px;">
+                            <strong>💡 提示：</strong>可用線上 YAML 驗證器檢查格式是否正確
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description 撰寫技巧 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📋 Description 怎麼寫最有效？</h2>
+                <div class="box warning" style="font-size: 18px;">
+                    <strong>🔥 超級重要！</strong>description 欄位決定了 AI 何時會自動觸發這個 Skill
+                </div>
+                <div class="two-column" style="margin-top: 20px;">
+                    <div>
+                        <h3>✍️ 撰寫技巧（中英文混用最好！）</h3>
+                        <ul>
+                            <li><strong>列出動作詞：</strong><br>create, build, generate, make, design, fix, review</li>
+                            <li><strong>列出主題詞：</strong><br>website, landing page, dashboard, chat, API</li>
+                            <li><strong>加入中文：</strong><br>建立、生成、製作、聊天室、專案、初始化</li>
+                        </ul>
+                        <div class="box success" style="margin-top: 15px;">
+                            <strong>關鍵字越多，觸發率越高！</strong>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>❌ 不好的範例</h3>
+                        <pre style="font-size: 14px; background: #ffebee;">"A skill for chat."
+
+↑ 太簡短，AI 很難判斷何時使用</pre>
+                        <h3 style="margin-top: 20px;">✅ 好的範例</h3>
+                        <pre style="font-size: 14px; background: #e8f5e9;">"Initialize new projects with
+standard files.
+Triggers: init project, 初始化,
+create project, setup project,
+建立專案.
+Creates: README.md, .gitignore,
+package.json"</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions 撰寫原則 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📜 Instructions 撰寫三大原則</h2>
+                <div class="three-column">
+                    <div class="concept-card">
+                        <span class="emoji-icon">🏗️</span>
+                        <h3>1. 結構清楚</h3>
+                        <ul style="text-align: left; font-size: 15px; margin-top: 10px;">
+                            <li>用標題 <code>##</code> 分段</li>
+                            <li>用編號 <code>1. 2. 3.</code> 列步驟</li>
+                            <li>每個 Step 一個明確任務</li>
+                        </ul>
+                    </div>
+                    <div class="concept-card">
+                        <span class="emoji-icon">🎯</span>
+                        <h3>2. 指令明確</h3>
+                        <ul style="text-align: left; font-size: 15px; margin-top: 10px;">
+                            <li>指定工具：read_file</li>
+                            <li>指定路徑：resources/xxx</li>
+                            <li>指定動作：replace, create</li>
+                        </ul>
+                    </div>
+                    <div class="concept-card">
+                        <span class="emoji-icon">🔄</span>
+                        <h3>3. 邏輯完整</h3>
+                        <ul style="text-align: left; font-size: 15px; margin-top: 10px;">
+                            <li>考慮各種情況</li>
+                            <li>加入條件判斷</li>
+                            <li>加入錯誤處理</li>
+                        </ul>
+                    </div>
+                </div>
+                <pre style="font-size: 14px; margin-top: 25px;">## Instructions
+
+### Step 1: Gather Information
+1. Ask user for project name (MUST be lowercase with hyphens)
+2. Ask user for project description
+
+### Step 2: Create Files
+1. Read template from resources/readme-template.md
+2. Replace {{PROJECT_NAME}} with user's project name
+3. Write the file to ./README.md
+
+### Step 3: Verify and Report
+1. Check if all files were created successfully
+2. Display a summary to the user</pre>
+            </div>
+        </div>
+
+        <!-- 給 AI 的關鍵指令詞 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>🔑 給 AI 的關鍵指令詞（超重要！）</h2>
+                <table style="font-size: 16px;">
+                    <tr>
+                        <th style="width: 25%;">指令詞</th>
+                        <th style="width: 25%;">用途</th>
+                        <th style="width: 50%;">範例</th>
+                    </tr>
+                    <tr>
+                        <td><code>MUST / 必須</code></td>
+                        <td>強調不可省略的步驟</td>
+                        <td>你<strong>必須</strong>先確認使用者已建立 Firebase 專案</td>
+                    </tr>
+                    <tr>
+                        <td><code>Check if / 先檢查</code></td>
+                        <td>執行前的驗證</td>
+                        <td><strong>先檢查</strong>資料夾是否存在</td>
+                    </tr>
+                    <tr>
+                        <td><code>Ask user / 詢問使用者</code></td>
+                        <td>需要使用者輸入時</td>
+                        <td><strong>詢問使用者</strong>專案名稱和描述</td>
+                    </tr>
+                    <tr>
+                        <td><code>If...then / 如果...就</code></td>
+                        <td>條件判斷</td>
+                        <td><strong>如果</strong>檔案已存在，<strong>就</strong>先詢問是否覆蓋</td>
+                    </tr>
+                    <tr>
+                        <td><code>NEVER / 禁止</code></td>
+                        <td>防止危險操作</td>
+                        <td><strong>禁止</strong>在未確認前刪除檔案</td>
+                    </tr>
+                    <tr>
+                        <td><code>After completing / 完成後</code></td>
+                        <td>收尾步驟</td>
+                        <td><strong>完成後</strong>顯示建立的檔案清單</td>
+                    </tr>
+                </table>
+                <div class="box info" style="margin-top: 20px;">
+                    <strong>💡 提示：</strong>中英文都可以使用！AI 都能理解。混用效果最好。
+                </div>
+            </div>
+        </div>
+
+        <!-- 完整 SKILL.md 範例 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📄 完整 SKILL.md 範例</h2>
+                <pre style="font-size: 13px; max-height: 55vh; overflow-y: auto;">---
+name: project-initializer
+description: "Initialize new projects with standard files.
+Triggers: init project, 初始化專案, create project, setup project, 建立專案.
+Creates: README.md, .gitignore, package.json with customized content."
+---
+
+# Project Initializer
+
+This skill creates standard project files with customized content.
+
+## Instructions
+
+### Step 1: Gather Information
+1. Ask user for the project name (MUST be lowercase, use hyphens for spaces)
+2. Ask user for a brief project description (1-2 sentences)
+
+### Step 2: Create README.md
+1. Read the template from `resources/readme-template.md`
+2. Replace `{{PROJECT_NAME}}` with the user's project name
+3. Replace `{{PROJECT_DESCRIPTION}}` with the user's description
+4. Write the result to `./README.md`
+
+### Step 3: Create .gitignore
+1. Read the template from `resources/gitignore-template.txt`
+2. Write the content to `./.gitignore` (no modifications needed)
+
+### Step 4: Create package.json
+1. Read the template from `resources/package-template.json`
+2. Replace `{{PROJECT_NAME}}` and `{{PROJECT_DESCRIPTION}}`
+3. Write the result to `./package.json`
+
+### Step 5: Report Completion
+1. List all created files
+2. Show a brief summary of what was set up
+3. NEVER delete or overwrite existing files without user confirmation</pre>
+            </div>
+        </div>
+
+        <!-- SKILL.md vs README.md -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📊 SKILL.md vs README.md 的差異</h2>
+                <table style="font-size: 16px;">
+                    <tr>
+                        <th>項目</th>
+                        <th>README.md（傳統方式）</th>
+                        <th>SKILL.md（進階方式）</th>
+                    </tr>
+                    <tr>
+                        <td><strong>用途</strong></td>
+                        <td>給人類閱讀的專案說明</td>
+                        <td>給 AI 執行的操作手冊</td>
+                    </tr>
+                    <tr>
+                        <td><strong>觸發方式</strong></td>
+                        <td>手動貼給 AI 看</td>
+                        <td>AI 自動偵測並觸發</td>
+                    </tr>
+                    <tr>
+                        <td><strong>格式要求</strong></td>
+                        <td>自由格式</td>
+                        <td>需要 YAML Frontmatter</td>
+                    </tr>
+                    <tr>
+                        <td><strong>放置位置</strong></td>
+                        <td>專案根目錄</td>
+                        <td>.agent/skills/ 或 .claude/skills/</td>
+                    </tr>
+                    <tr>
+                        <td><strong>可擴展性</strong></td>
+                        <td>單一檔案</td>
+                        <td>可搭配 scripts/data/resources</td>
+                    </tr>
+                </table>
+                <div class="box success" style="margin-top: 20px; font-size: 17px;">
+                    <strong>💡 結論：</strong>SKILL.md 是 README.md 的「進化版」，專為 AI 協作設計！
+                </div>
+            </div>
+        </div>
+
+        <!-- Part B 重點回顧 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>📋 Part B 重點回顧</h2>
+                <div class="two-column">
+                    <div class="highlight">
+                        <h3>📝 SKILL.md 三大部分</h3>
+                        <ul>
+                            <li><strong>Frontmatter：</strong>name + description（YAML 格式）</li>
+                            <li><strong>Description：</strong>給人類看的功能說明</li>
+                            <li><strong>Instructions：</strong>給 AI 執行的步驟</li>
+                        </ul>
+                    </div>
+                    <div class="highlight">
+                        <h3>🔑 關鍵技巧</h3>
+                        <ul>
+                            <li>description 要包含多個觸發關鍵字</li>
+                            <li>中英文混用觸發率最高</li>
+                            <li>善用 MUST / NEVER / Ask user 指令詞</li>
+                            <li>步驟要結構清楚、指令明確</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="box warning" style="margin-top: 20px;">
+                    <h3>⚠️ 常見錯誤提醒</h3>
+                    <ul>
+                        <li>YAML 冒號後要有空格：<code>name: my-skill</code></li>
+                        <li>前後要用三個減號：<code>---</code></li>
+                        <li>description 太簡短會導致無法觸發</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 導航頁 -->
+        <div class="slide">
+            <div class="content-card cover-content">
+                <h1 style="font-size: 40px;">🎉 Part B 完成！</h1>
+                <p class="cover-subtitle">你已經學會撰寫 SKILL.md 了</p>
+                <p style="font-size: 18px; color: #666; margin-top: 15px;">
+                    接下來學習進階資料夾結構：scripts / data / resources
+                </p>
+                <div class="nav-buttons-bottom">
+                    <a href="Part6_進階技巧與Skill建立.html" class="nav-btn-outline">📚 回到學習地圖</a>
+                    <a href="Part6C_資料夾結構.html" class="nav-btn-large">前往 Part C：資料夾結構 →</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        function init() { createIndicators(); showSlide(0); updateButtons(); document.addEventListener('keydown', handleKeydown); }
+        function handleKeydown(e) { if (e.key === 'ArrowLeft') changeSlide(-1); if (e.key === 'ArrowRight') changeSlide(1); }
+        function createIndicators() { const container = document.getElementById('indicatorContainer'); slides.forEach((_, i) => { const dot = document.createElement('div'); dot.className = 'dot'; dot.onclick = () => goToSlide(i); container.appendChild(dot); }); }
+        function showSlide(index) { if (index < 0) index = 0; if (index >= totalSlides) index = totalSlides - 1; slides.forEach(s => s.classList.remove('active')); slides[index].classList.add('active'); currentSlide = index; document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index)); updateButtons(); document.getElementById('pageIndicator').textContent = `${index + 1} / ${totalSlides}`; }
+        function changeSlide(d) { showSlide(currentSlide + d); }
+        function goToSlide(i) { showSlide(i); }
+        function updateButtons() { document.getElementById('prevBtn').disabled = currentSlide === 0; document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1; }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        init();
+    </script>
+</body>
+</html>

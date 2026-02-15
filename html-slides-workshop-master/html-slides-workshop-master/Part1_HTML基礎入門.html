@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Part 1 - HTML 基礎入門</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            color: #333;
+        }
+        .nav-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            z-index: 10000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .nav-buttons { display: flex; gap: 12px; }
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+        .nav-arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.25);
+            color: white;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.4);
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 9000;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-arrow:hover {
+            background: rgba(255,255,255,0.5);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .prev-arrow { left: 30px; }
+        .next-arrow { right: 30px; }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slide-container {
+            width: 100%;
+            height: 100vh;
+            padding-top: 60px;
+            position: relative;
+            z-index: 1;
+        }
+        .slide {
+            position: absolute;
+            top: 60px; left: 0;
+            width: 100%;
+            height: calc(100vh - 60px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 10;
+        }
+        .slide.active {
+            display: flex;
+            opacity: 1;
+            z-index: 20;
+        }
+        .content-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            padding: 35px 45px;
+            max-width: 1400px;
+            width: 95%;
+            max-height: 88vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        h1 {
+            color: #667eea;
+            font-size: 40px;
+            margin-bottom: 18px;
+            text-align: center;
+            font-weight: 800;
+        }
+        h2 {
+            color: #764ba2;
+            font-size: 28px;
+            margin-bottom: 18px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            font-weight: 700;
+        }
+        h3 {
+            color: #667eea;
+            font-size: 20px;
+            margin: 18px 0 10px 0;
+            font-weight: 600;
+        }
+        p, li {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #444;
+            margin-bottom: 8px;
+        }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        li { margin-bottom: 5px; }
+        code {
+            background: #f0f2f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            color: #d63384;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 12px 0;
+            font-size: 13px;
+            line-height: 1.5;
+            font-family: 'Consolas', monospace;
+        }
+        .box {
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin: 12px 0;
+            border-left: 4px solid;
+            font-size: 15px;
+        }
+        .info { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .concept-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #e8ecff;
+            transition: all 0.3s ease;
+        }
+        .concept-card:hover {
+            transform: translateY(-3px);
+            border-color: #667eea;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        }
+        .tag-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+            margin: 2px;
+            font-weight: 500;
+        }
+        .time-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 13px;
+            margin-right: 8px;
+        }
+        .screenshot {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            margin: 12px 0;
+            border: 2px solid #e0e0e0;
+        }
+        .screenshot-container {
+            text-align: center;
+            margin: 12px 0;
+        }
+        .screenshot-caption {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        @media (max-width: 900px) {
+            .two-column { grid-template-columns: 1fr; }
+        }
+        .indicators {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            z-index: 4000;
+            padding: 8px 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 25px;
+            backdrop-filter: blur(5px);
+            flex-wrap: wrap;
+            max-width: 90%;
+            justify-content: center;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .dot.active {
+            background: #fff;
+            transform: scale(1.4);
+        }
+        .dot:hover { background: rgba(255,255,255,0.7); }
+        .cover-content {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 50vh;
+        }
+        .cover-content h1 {
+            font-size: 44px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .cover-subtitle {
+            font-size: 22px;
+            color: #764ba2;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+        .cover-info {
+            font-size: 15px;
+            color: #888;
+            margin-top: 25px;
+        }
+        .section-divider {
+            text-align: center;
+            padding: 25px;
+        }
+        .section-divider h1 {
+            font-size: 42px;
+            margin-bottom: 12px;
+        }
+        .section-divider p {
+            font-size: 18px;
+            color: #666;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 10px 12px;
+            text-align: left;
+        }
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) { background: #f8f9ff; }
+        tr:hover { background: #f0f2ff; }
+        .part-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .keyboard-key {
+            display: inline-block;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-family: monospace;
+            font-size: 13px;
+            box-shadow: 0 2px 0 #999;
+        }
+        .flow-chart {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-title">Part 1 - HTML 基礎入門</div>
+        <div class="nav-buttons">
+            <a href="index.html" class="nav-btn">首頁</a>
+            <a href="Part2_Reveal.js簡報框架.html" class="nav-btn">下一章 →</a>
+            <button class="nav-btn" onclick="toggleFullscreen()">全螢幕</button>
+            <span class="nav-btn" id="pageIndicator">1 / 19</span>
+        </div>
+    </div>
+
+    <div class="slide-container">
+
+        <!-- 封面 -->
+        <div class="slide active">
+            <div class="content-card cover-content">
+                <h1>Part 1：HTML 基礎入門</h1>
+                <p class="cover-subtitle">認識網頁骨架，動手修改你的第一個網頁</p>
+                <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <span class="tag-badge">HTML 基礎</span>
+                    <span class="tag-badge">Tag 標籤</span>
+                    <span class="tag-badge">VS Code</span>
+                    <span class="tag-badge">Tab UI</span>
+                </div>
+                <p class="cover-info">曾慶良(阿亮老師) | AI 協作簡報實戰工作坊<br>實作 1-2 | Time 1-2</p>
+            </div>
+        </div>
+
+        <!-- 目錄 -->
+        <div class="slide">
+            <div class="content-card">
+                <h2>本章學習內容</h2>
+                <div class="two-column">
+                    <div>
+                        <h3>實作 1：認識 HTML 基礎</h3>
+                        <ul>
+                            <li>了解 HTML 是用來描述「內容結構」的</li>
+                            <li>認識基本標籤：<code>&lt;h1&gt;</code>、<code>&lt;p&gt;</code>、<code>&lt;section&gt;</code></li>
+                            <li>親手修改 HTML，看到瀏覽器即時更新</li>
+                            <li>理解 class 屬性的用途</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>實作 2：製作 Tab UI</h3>
+                        <ul>
+                            <li>理解網頁「切換」原理：顯示/隱藏</li>
+                            <li>學會使用 VS Code 開啟 HTML</li>
+                            <li>練習修改現有程式碼</li>
+                            <li>建立「編輯 → 儲存 → 預覽」的工作流程</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="box info">
+                    <strong>核心觀念：</strong>你不需要會寫程式，只需要「認識」HTML，然後讓 AI 幫你處理技術細節！
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 1 開始 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 1</p>
+                <h2>實作 1：認識 HTML，動手改出你的第一個網頁 <span class="part-badge">Part 1/8</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>學習目標</h3>
+                        <ul>
+                            <li>了解 HTML 是用來描述「內容結構」的</li>
+                            <li>認識基本標籤：<code>&lt;h1&gt;</code>、<code>&lt;p&gt;</code>、<code>&lt;section&gt;</code></li>
+                            <li>親手修改 HTML，看到瀏覽器即時更新</li>
+                            <li>理解 class 屬性的用途</li>
+                        </ul>
+                        <div class="box info">
+                            <strong>核心觀念：</strong>HTML 就像是網頁的「骨架」，你不需要會寫程式，只需要「認識」它！
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img1.png" alt="CodePen 編輯畫面" class="screenshot">
+                        <p class="screenshot-caption">亮師 1：CodePen 初始編輯畫面</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HTML 是什麼 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 1</p>
+                <h2>什麼是 HTML？用書信來比喻 <span class="part-badge">Part 2/8</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>想像你在寫一封信...</h3>
+                        <pre>親愛的媽媽：
+
+今天天氣很好，我去公園散步了。
+
+祝你身體健康！
+
+小明</pre>
+                        <p>這封信有「標題」、「內容」、「結尾」、「署名」</p>
+                        <p><strong>HTML 的作用：</strong>告訴電腦每一段文字的「角色」是什麼</p>
+                    </div>
+                    <div>
+                        <h3>用 HTML 來寫</h3>
+                        <pre>&lt;h1&gt;親愛的媽媽：&lt;/h1&gt;
+
+&lt;p&gt;今天天氣很好，
+我去公園散步了。&lt;/p&gt;
+
+&lt;p&gt;祝你身體健康！&lt;/p&gt;
+
+&lt;p&gt;小明&lt;/p&gt;</pre>
+                        <p><code>&lt;h1&gt;</code> = 大標題 (heading)</p>
+                        <p><code>&lt;p&gt;</code> = 段落 (paragraph)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 標籤的開始與結束 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 1</p>
+                <h2>標籤的開始與結束 <span class="part-badge">Part 3/8</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>每個標籤都有「開始」和「結束」</h3>
+                        <pre>&lt;h1&gt;這是標題&lt;/h1&gt;
+ ↑              ↑
+開始標籤     結束標籤
+            (多了斜線 /)</pre>
+                        <p>中間包住的文字，就是這個標籤的內容</p>
+                        <div class="box warning">
+                            <strong>記住：</strong>結束標籤多了一個斜線 <code>/</code>
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img3.png" alt="HTML 結構示意" class="screenshot">
+                        <p class="screenshot-caption">亮師 3：HTML 程式碼與瀏覽器顯示的對應</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6 個重要名詞 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 1</p>
+                <h2>你需要記住的 6 個名詞 <span class="part-badge">Part 4/8</span></h2>
+                <div class="concept-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="concept-card">
+                        <h3>1. HTML（結構）</h3>
+                        <p>網頁的「骨架」，用來告訴電腦「內容是什麼」</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>2. Tag（標籤）</h3>
+                        <p>用尖括號包起來的東西，如 <code>&lt;h1&gt;</code>、<code>&lt;p&gt;</code></p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>3. Element（元素）</h3>
+                        <p>完整的標籤組合：開始標籤 + 內容 + 結束標籤</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>4. Attribute（屬性）</h3>
+                        <p>標籤的額外設定，如 <code>class="title"</code></p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>5. Class（分類）</h3>
+                        <p>給元素取「名字」的屬性，像是門牌號碼</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>6. 瀏覽器渲染</h3>
+                        <p>瀏覽器讀取 HTML 並「畫」在螢幕上的過程</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 實際操作步驟 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 1</p>
+                <h2>實際操作：開啟 HTML 練習場 <span class="part-badge">Part 5/8</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>操作步驟</h3>
+                        <p><span class="step-number">1</span>打開 Chrome 瀏覽器</p>
+                        <p><span class="step-number">2</span>輸入網址：<code>codepen.io/pen/</code></p>
+                        <p><span class="step-number">3</span>在 HTML 區塊輸入程式碼</p>
+                        <pre>&lt;h1&gt;我的第一個網頁&lt;/h1&gt;
+&lt;p&gt;這是我用 HTML 寫的
+第一段文字。&lt;/p&gt;</pre>
+                        <p><span class="step-number">4</span>觀察右邊預覽區的結果</p>
+                        <div class="box success">
+                            <strong>恭喜！</strong>你完成了人生中的第一個網頁！
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img4.png" alt="完成練習後的畫面" class="screenshot">
+                        <p class="screenshot-caption">亮師 4：完成練習後的畫面</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VS Code 基本操作技巧 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 1</p>
+                <h2>VS Code 基本操作技巧 <span class="part-badge">Part 6/8</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>必學快捷鍵</h3>
+                        <table>
+                            <tr>
+                                <th>功能</th>
+                                <th>Windows</th>
+                                <th>Mac</th>
+                            </tr>
+                            <tr>
+                                <td>儲存檔案</td>
+                                <td><span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">S</span></td>
+                                <td><span class="keyboard-key">Cmd</span> + <span class="keyboard-key">S</span></td>
+                            </tr>
+                            <tr>
+                                <td>搜尋文字</td>
+                                <td><span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">F</span></td>
+                                <td><span class="keyboard-key">Cmd</span> + <span class="keyboard-key">F</span></td>
+                            </tr>
+                            <tr>
+                                <td>複製</td>
+                                <td><span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">C</span></td>
+                                <td><span class="keyboard-key">Cmd</span> + <span class="keyboard-key">C</span></td>
+                            </tr>
+                            <tr>
+                                <td>貼上</td>
+                                <td><span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">V</span></td>
+                                <td><span class="keyboard-key">Cmd</span> + <span class="keyboard-key">V</span></td>
+                            </tr>
+                            <tr>
+                                <td>復原</td>
+                                <td><span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">Z</span></td>
+                                <td><span class="keyboard-key">Cmd</span> + <span class="keyboard-key">Z</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div>
+                        <h3>右鍵選單操作</h3>
+                        <ul>
+                            <li><strong>在檔案上按右鍵：</strong>
+                                <ul>
+                                    <li>「以 Code 開啟」- 用 VS Code 編輯</li>
+                                    <li>「複製」- 複製檔案</li>
+                                    <li>「重新命名」- 改檔名</li>
+                                </ul>
+                            </li>
+                            <li><strong>在程式碼上按右鍵：</strong>
+                                <ul>
+                                    <li>「格式化文件」- 自動排版</li>
+                                    <li>「剪下」「複製」「貼上」</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <div class="box info">
+                            <strong>小技巧：</strong>按住 <span class="keyboard-key">Ctrl</span> 再按滑鼠左鍵可以多選！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 與 Class -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 1</p>
+                <h2>進階練習：Section 與 Class <span class="part-badge">Part 7/8</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>Section = 簡報的「一頁」</h3>
+                        <pre>&lt;section&gt;
+  &lt;h1&gt;第一頁：自我介紹&lt;/h1&gt;
+  &lt;p&gt;大家好，我是小明。&lt;/p&gt;
+&lt;/section&gt;
+
+&lt;section&gt;
+  &lt;h2&gt;第二頁：我的興趣&lt;/h2&gt;
+  &lt;p&gt;我喜歡旅遊和攝影。&lt;/p&gt;
+&lt;/section&gt;</pre>
+                        <h3>Class = 門牌號碼</h3>
+                        <pre>&lt;h1 class="title"&gt;標題&lt;/h1&gt;
+&lt;p class="subtitle"&gt;副標題&lt;/p&gt;</pre>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img5.png" alt="Section 結構示意" class="screenshot">
+                        <p class="screenshot-caption">亮師 5：三個 Section 代表三頁</p>
+                        <div class="box info">
+                            <strong>Class 的作用：</strong>用來控制這個元素的外觀（顏色、大小等）
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 1 完成確認 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 1</p>
+                <h2>實作 1 完成確認 <span class="part-badge">Part 8/8</span></h2>
+                <div class="concept-grid">
+                    <div class="concept-card">
+                        <h3>了解 HTML 結構</h3>
+                        <p>HTML 是用來描述「內容結構」的標記語言</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>認識基本標籤</h3>
+                        <p><code>&lt;h1&gt;</code>、<code>&lt;p&gt;</code>、<code>&lt;section&gt;</code></p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>親手修改過</h3>
+                        <p>在 CodePen 或 VS Code 修改並看到結果</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>理解 Class</h3>
+                        <p>Class 是給元素取「名字」的屬性</p>
+                    </div>
+                </div>
+                <div class="box success" style="margin-top: 20px;">
+                    <strong>完成！</strong>你已經認識 HTML 了！接下來我們來做一個會切換的網頁標籤。
+                </div>
+            </div>
+        </div>
+
+        <!-- 實作 2 開始 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 2</p>
+                <h2>實作 2：製作「會切換」的網頁標籤 <span class="part-badge">Part 1/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>學習目標</h3>
+                        <ul>
+                            <li>理解網頁「切換」原理：顯示/隱藏</li>
+                            <li>學會使用 VS Code 開啟 HTML</li>
+                            <li>練習修改現有程式碼</li>
+                            <li>建立「編輯 → 儲存 → 預覽」的工作流程</li>
+                        </ul>
+                        <div class="box info">
+                            <strong>核心觀念：</strong>網頁切換不是真的換頁，而是隱藏/顯示不同內容！
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img8.png" alt="Tab UI 範例" class="screenshot">
+                        <p class="screenshot-caption">亮師 8：標籤頁切換效果</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 切換原理 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 2</p>
+                <h2>標籤切換的原理 <span class="part-badge">Part 2/6</span></h2>
+                <div class="two-column">
+                    <div class="screenshot-container">
+                        <img src="images/img9.png" alt="點擊簡介標籤" class="screenshot">
+                        <p class="screenshot-caption">點擊「簡介」標籤</p>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img10.png" alt="點擊課程標籤" class="screenshot">
+                        <p class="screenshot-caption">點擊「課程」標籤</p>
+                    </div>
+                </div>
+                <div class="box success">
+                    <strong>原理：</strong>所有內容一開始都在頁面上，程式只是控制哪個要「顯示」、哪個要「隱藏」。這和 HTML 簡報的切換原理一模一樣！
+                </div>
+            </div>
+        </div>
+
+        <!-- VS Code 操作詳細步驟 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 2</p>
+                <h2>使用 VS Code 編輯檔案（詳細步驟）<span class="part-badge">Part 3/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>開啟檔案步驟</h3>
+                        <p><span class="step-number">1</span>找到 <code>tab-ui.html</code> 檔案</p>
+                        <p><span class="step-number">2</span>在檔案上按右鍵</p>
+                        <p><span class="step-number">3</span>選擇「以 Code 開啟」或「Open with Code」</p>
+                        <p><span class="step-number">4</span>VS Code 會開啟並顯示程式碼</p>
+                        <h3>使用搜尋功能找到要修改的地方</h3>
+                        <p><span class="step-number">5</span>按 <span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">F</span> 開啟搜尋</p>
+                        <p><span class="step-number">6</span>輸入「簡介」來搜尋</p>
+                        <p><span class="step-number">7</span>VS Code 會跳到該位置並標黃</p>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img11.png" alt="VS Code 開啟檔案" class="screenshot">
+                        <p class="screenshot-caption">亮師 11：用 VS Code 開啟 HTML</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 修改標籤按鈕 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 2</p>
+                <h2>修改標籤按鈕的文字 <span class="part-badge">Part 4/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>找到這段程式碼</h3>
+                        <pre>&lt;button class="tab-btn active"&gt;簡介&lt;/button&gt;
+&lt;button class="tab-btn"&gt;課程&lt;/button&gt;
+&lt;button class="tab-btn"&gt;作品&lt;/button&gt;
+&lt;button class="tab-btn"&gt;聯絡我&lt;/button&gt;</pre>
+                        <h3>改成你想要的內容</h3>
+                        <pre>&lt;button class="tab-btn active"&gt;關於我&lt;/button&gt;
+&lt;button class="tab-btn"&gt;我的技能&lt;/button&gt;
+&lt;button class="tab-btn"&gt;作品集&lt;/button&gt;
+&lt;button class="tab-btn"&gt;聯絡方式&lt;/button&gt;</pre>
+                        <div class="box warning">
+                            <strong>注意：</strong>只修改標籤裡的文字，不要動到 class 和其他屬性！
+                        </div>
+                    </div>
+                    <div>
+                        <h3>修改步驟</h3>
+                        <p><span class="step-number">1</span>用滑鼠選取「簡介」兩個字</p>
+                        <p><span class="step-number">2</span>直接打字輸入「關於我」（會自動取代）</p>
+                        <p><span class="step-number">3</span>重複以上步驟修改其他標籤</p>
+                        <p><span class="step-number">4</span>按 <span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">S</span> 儲存</p>
+                        <div class="box info">
+                            <strong>小技巧：</strong>如果打錯了，按 <span class="keyboard-key">Ctrl</span> + <span class="keyboard-key">Z</span> 可以復原！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 修改內容區塊 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 2</p>
+                <h2>修改標籤對應的內容 <span class="part-badge">Part 5/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>找到內容區塊</h3>
+                        <p>搜尋 <code>tab-content</code> 找到對應的內容</p>
+                        <pre>&lt;div class="tab-content" id="tab1"&gt;
+  &lt;h2&gt;關於我&lt;/h2&gt;
+  &lt;p&gt;哈囉！我是小明。&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;div class="tab-content" id="tab2"&gt;
+  &lt;h2&gt;我的技能&lt;/h2&gt;
+  &lt;ul&gt;
+    &lt;li&gt;PowerPoint 簡報製作&lt;/li&gt;
+    &lt;li&gt;AI 工具應用&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/div&gt;</pre>
+                        <div class="box warning">
+                            <strong>對應關係：</strong><code>id="tab1"</code> 對應第一個標籤按鈕
+                        </div>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="images/img12.png" alt="內容區塊程式碼" class="screenshot">
+                        <p class="screenshot-caption">亮師 12：tab-content 內容區塊</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 儲存與預覽工作流程 -->
+        <div class="slide">
+            <div class="content-card">
+                <p class="time-badge">Time 2</p>
+                <h2>儲存並預覽結果（重要工作流程）<span class="part-badge">Part 6/6</span></h2>
+                <div class="two-column">
+                    <div>
+                        <h3>完整工作流程（請牢記！）</h3>
+                        <div class="flow-chart">
+                            <pre style="background: transparent; color: #333;">
+┌─────────────┐
+│  VS Code    │
+│  修改程式碼  │
+└──────┬──────┘
+       ↓
+┌─────────────┐
+│ Ctrl + S    │
+│  儲存檔案   │
+└──────┬──────┘
+       ↓
+┌─────────────┐
+│  切換到     │
+│  Chrome     │
+└──────┬──────┘
+       ↓
+┌─────────────┐
+│    F5      │
+│ 重新整理   │
+└──────┬──────┘
+       ↓
+┌─────────────┐
+│ 確認修改   │
+│   成功     │
+└─────────────┘</pre>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>你學會了什麼？</h3>
+                        <ul>
+                            <li>網頁「切換」= 顯示/隱藏</li>
+                            <li>HTML 元素有「對應關係」</li>
+                            <li>修改只需改「文字內容」</li>
+                            <li>VS Code + Chrome 工作流程</li>
+                        </ul>
+                        <div class="box success">
+                            <strong>這個流程會用到整整兩天！</strong><br>
+                            編輯 → 儲存 → 預覽 → 確認
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 本章完成 -->
+        <div class="slide">
+            <div class="content-card cover-content">
+                <h1>Part 1 完成！</h1>
+                <p class="cover-subtitle">你已經認識 HTML 基礎了</p>
+                <div class="concept-grid" style="margin-top: 30px;">
+                    <div class="concept-card">
+                        <h3>HTML 結構</h3>
+                        <p>網頁的骨架</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>基本標籤</h3>
+                        <p>h1, p, section</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>VS Code 操作</h3>
+                        <p>編輯儲存預覽</p>
+                    </div>
+                    <div class="concept-card">
+                        <h3>Tab UI 原理</h3>
+                        <p>顯示/隱藏切換</p>
+                    </div>
+                </div>
+                <p class="cover-info" style="margin-top: 30px;">
+                    <a href="Part2_Reveal.js簡報框架.html" style="color: #667eea; font-weight: bold; text-decoration: none;">
+                        下一章：Part 2 - Reveal.js 簡報框架 →
+                    </a>
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="nav-arrow prev-arrow" id="prevBtn" onclick="changeSlide(-1)">&#10094;</button>
+    <button class="nav-arrow next-arrow" id="nextBtn" onclick="changeSlide(1)">&#10095;</button>
+    <div class="indicators" id="indicatorContainer"></div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function init() {
+            createIndicators();
+            showSlide(0);
+            updateButtons();
+            document.addEventListener('keydown', handleKeydown);
+        }
+
+        function handleKeydown(e) {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+            if (e.key === 'Home') goToSlide(0);
+            if (e.key === 'End') goToSlide(totalSlides - 1);
+        }
+
+        function createIndicators() {
+            const container = document.getElementById('indicatorContainer');
+            container.innerHTML = '';
+            slides.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                dot.onclick = () => goToSlide(index);
+                container.appendChild(dot);
+            });
+        }
+
+        function showSlide(index) {
+            if (index < 0) index = 0;
+            if (index >= totalSlides) index = totalSlides - 1;
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[index].classList.add('active');
+            currentSlide = index;
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, idx) => dot.classList.toggle('active', idx === index));
+            updateButtons();
+            document.getElementById('pageIndicator').textContent = `${index + 1} / ${totalSlides}`;
+        }
+
+        function changeSlide(direction) { showSlide(currentSlide + direction); }
+        function goToSlide(index) { showSlide(index); }
+
+        function updateButtons() {
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
