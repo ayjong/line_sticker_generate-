@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/line_sticker_create/',
+  base: '/line_sticker_generate-/',
   server: {
     port: 3000,
     open: true
