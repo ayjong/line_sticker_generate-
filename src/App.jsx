@@ -201,11 +201,25 @@ function App() {
           }}>重置專案</button>
         </div>
 
-        {/* Step Navigation */}
-        <div className="steps-nav" style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '30px' }}>
-          {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
-            <div key={s} className={`step-dot ${currentStep === s ? 'active' : ''} ${currentStep > s ? 'done' : ''}`}
-              style={{ width: '12px', height: '12px', borderRadius: '50%', background: currentStep === s ? '#6366f1' : currentStep > s ? '#10b981' : '#cbd5e1' }} />
+        {/* Modern Stepper Navigation */}
+        <div className="stepper">
+          {[
+            { id: 1, title: 'API', desc: '輸入金鑰' },
+            { id: 2, title: '數量', desc: '張數設定' },
+            { id: 3, title: '主題', desc: '內容描述' },
+            { id: 4, title: '形象', desc: '角色預覽' },
+            { id: 5, title: '文案', desc: '描述生成' },
+            { id: 6, title: '校改', desc: '文字編輯' },
+            { id: 7, title: '去背', desc: '效果調整' },
+            { id: 8, title: '打包', desc: '完成下載' }
+          ].map(s => (
+            <div key={s.id} className={`step ${currentStep === s.id ? 'active' : ''} ${currentStep > s.id ? 'done' : ''}`}>
+              <div className="step-header">{currentStep > s.id ? '✓' : s.id}</div>
+              <div className="step-info">
+                <div className="step-title">{s.title}</div>
+                <div className="step-desc">{s.desc}</div>
+              </div>
+            </div>
           ))}
         </div>
 
