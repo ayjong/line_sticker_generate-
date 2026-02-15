@@ -1,12 +1,27 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LINE 貼圖製作工具</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>✨ LINE 貼圖製作大師</title>
+</head>
+
+<body>
+  <div id="root">
+    <div style="text-align:center; padding:100px; font-family: sans-serif;">
+      <div style="font-size: 40px; margin-bottom: 20px;">✨</div>
+      <h2 style="color: #6366f1;">系統載入中</h2>
+      <p style="color: #64748b;">初次開啟請稍候，或嘗試重新整理頁面</p>
+      <div id="error-display" style="color: #ef4444; margin-top: 20px; font-size: 14px;"></div>
+    </div>
+  </div>
+  <script>
+    window.onerror = function (msg, url, line) {
+      document.getElementById('error-display').innerText = '載入出錯: ' + msg;
+    };
+  </script>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

@@ -8,6 +8,7 @@ import { downloadAsZip } from './utils/zipDownloader'
 const STORAGE_KEY = 'line_sticker_api_key'
 
 function App() {
+  console.log('App Started')
   const [currentStep, setCurrentStep] = useState(1)
   const [apiKey, setApiKey] = useState('')
   const [count, setCount] = useState(8)
